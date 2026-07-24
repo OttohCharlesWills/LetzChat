@@ -1,0 +1,18 @@
+// Fonts
+@import url('https://fonts.bunny.net/css?family=Nunito');
+
+// Variables
+@import 'variables';
+
+// Bootstrap
+@import 'bootstrap/scss/bootstrap';
+
+// Twemoji renders every emoji as an <img class="emoji"> SVG instead of a
+// text character — without this, the images have no size constraint and
+// can render arbitrarily large (this is what was blowing up the 🌍 icon).
+img.emoji {
+    height: 1em;
+    width: 1em;
+    margin: 0 0.05em 0 0.1em;
+    vertical-align: -0.1em;
+}

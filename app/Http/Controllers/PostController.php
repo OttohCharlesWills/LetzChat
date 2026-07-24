@@ -1,0 +1,268 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Comment;
+use App\Models\Post;
+use App\Models\Reaction;
+use Illuminate\Http\Request;
+
+class PostController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
+    /**
+     * Show the feed: composer + posts visible to the logged-in user.
+     */
+    public function index(Request $request)
+    {
+        $viewer = $request->user();
+
+        $posts = Post::with('user')
+            ->visibleTo($viewer)
+            ->orderByDesc('is_pinned')
+            ->orderByDesc('created_at')
+            ->paginate(10);
+
+        // Needed for the "custom" visibility exclusion picker in the composer.
+        $friends = $viewer->friends();
+
+        return view('posts.index', compact('posts', 'friends'));
+    }
+
+    /**
+     * Create a new (text-only, for now) post.
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'body' => ['required', 'string', 'max:5000'],
+            'visibility' => ['required', 'in:public,friends,custom,private'],
+            'excluded_user_ids' => ['nullable', 'array'],
+            'excluded_user_ids.*' => ['exists:users,id'],
+        ]);
+
+        $post = $request->user()->posts()->create([
+            'body' => $validated['body'],
+            'visibility' => $validated['visibility'],
+        ]);
+
+        if ($validated['visibility'] === 'custom' && ! empty($validated['excluded_user_ids'])) {
+            $post->excludedUsers()->sync($validated['excluded_user_ids']);
+        }
+
+        $post->load('user');
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => __('Your post has been shared.'),
+                'html' => view('posts.partials.post-card', ['post' => $post])->render(),
+            ]);
+        }
+
+        return back()->with('status', __('Your post has been shared.'));
+    }
+
+    /**
+     * Delete a post (soft delete). Author only.
+     */
+    public function destroy(Request $request, Post $post)
+    {
+        abort_unless($post->user_id === $request->user()->id, 403);
+
+        $post->delete();
+
+        if ($request->wantsJson()) {
+            return response()->json(['message' => __('Post deleted.')]);
+        }
+
+        return back()->with('status', __('Post deleted.'));
+    }
+
+    /**
+     * React to a post. Left-click sends no type (defaults to 'like');
+     * the right-click picker sends an explicit type. Reacting again with
+     * the SAME type you already have removes it (unlike); a different
+     * type just updates your existing reaction.
+     */
+    public function react(Request $request, Post $post)
+    {
+        $validated = $request->validate([
+            'type' => ['nullable', 'in:like,love,haha,wow,sad,angry'],
+        ]);
+        $type = $validated['type'] ?? 'like';
+
+        $existing = $post->reactions()->where('user_id', $request->user()->id)->first();
+
+        if ($existing && $existing->type === $type) {
+            $existing->delete();
+            $current = null;
+        } elseif ($existing) {
+            $existing->update(['type' => $type]);
+            $current = $type;
+        } else {
+            $post->reactions()->create(['user_id' => $request->user()->id, 'type' => $type]);
+            $current = $type;
+        }
+
+        $post->refresh();
+
+        return response()->json([
+            'likes_count'      => $post->likes_count,
+            'current_reaction' => $current,
+            'current_emoji'    => $current ? Reaction::emojiFor($current) : null,
+        ]);
+    }
+
+    /**
+     * Everyone who reacted to this post, with their name and which reaction
+     * type they used. Powers the hover tooltip on the emoji badge cluster —
+     * fetched lazily (once per post, cached client-side) rather than eagerly
+     * loaded with every feed page.
+     */
+    public function reactors(Post $post)
+    {
+        $reactors = $post->reactions()
+            ->with('user:id,first_name,last_name')
+            ->get()
+            ->map(fn ($r) => [
+                'name' => $r->user->first_name.' '.$r->user->last_name,
+                'type' => $r->type,
+            ]);
+
+        return response()->json(['reactors' => $reactors]);
+    }
+
+    /**
+     * Load a post's top-level comments (with their one level of replies).
+     * Fetched lazily when the Comment button is first clicked, not eagerly
+     * on every feed page load.
+     */
+    public function comments(Request $request, Post $post)
+    {
+        $comments = $post->comments()
+            ->with(['user', 'replies.user'])
+            ->get();
+
+        $html = $comments
+            ->map(fn ($comment) => view('posts.partials.comment', [
+                'comment' => $comment,
+                'post'    => $post,
+            ])->render())
+            ->implode('');
+
+        return response()->json(['html' => $html]);
+    }
+
+    /**
+     * Add a comment, or a reply if parent_id is present.
+     */
+    public function storeComment(Request $request, Post $post)
+    {
+        abort_unless($post->comments_enabled, 403, 'Comments are turned off for this post.');
+
+        $validated = $request->validate([
+            'body'      => ['required', 'string', 'max:2000'],
+            'parent_id' => ['nullable', 'exists:comments,id'],
+        ]);
+
+        $comment = $post->allComments()->create([
+            'user_id'   => $request->user()->id,
+            'parent_id' => $validated['parent_id'] ?? null,
+            'body'      => $validated['body'],
+        ]);
+
+        $comment->load('user');
+
+        return response()->json([
+            'comments_count' => $post->fresh()->comments_count,
+            'is_reply'       => (bool) $comment->parent_id,
+            'parent_id'      => $comment->parent_id,
+            'html'           => view('posts.partials.comment', [
+                'comment' => $comment,
+                'post'    => $post,
+            ])->render(),
+        ]);
+    }
+
+    /**
+     * Delete your own comment (soft delete — see Comment migration notes
+     * on why: replies underneath stay intact and show under a
+     * "This comment was deleted" placeholder).
+     */
+    public function destroyComment(Request $request, Comment $comment)
+    {
+        abort_unless($comment->user_id === $request->user()->id, 403);
+
+        $post = $comment->post;
+        $comment->delete();
+
+        return response()->json([
+            'comments_count' => $post->fresh()->comments_count,
+        ]);
+    }
+
+    /**
+     * Simple like toggle on a COMMENT (not the full 6-emoji picker —
+     * that's only on posts per the design). Same Reaction model either way.
+     */
+    public function reactComment(Request $request, Comment $comment)
+    {
+        $existing = $comment->reactions()->where('user_id', $request->user()->id)->first();
+
+        if ($existing) {
+            $existing->delete();
+            $liked = false;
+        } else {
+            $comment->reactions()->create(['user_id' => $request->user()->id, 'type' => 'like']);
+            $liked = true;
+        }
+
+        return response()->json([
+            'likes_count' => $comment->fresh()->likes_count,
+            'liked'       => $liked,
+        ]);
+    }
+
+    /**
+     * Share/repost a post, with an optional caption. This creates a NEW
+     * post row pointing back at the original via shared_post_id — so it
+     * lives in the feed like any other post and can get its own comments
+     * and reactions.
+     */
+    public function share(Request $request, Post $post)
+    {
+        $validated = $request->validate([
+            'caption'    => ['nullable', 'string', 'max:2000'],
+            'visibility' => ['nullable', 'in:public,friends,custom,private'],
+        ]);
+
+        $share = $request->user()->posts()->create([
+            'body'           => $validated['caption'] ?? null,
+            'visibility'     => $validated['visibility'] ?? 'public',
+            'shared_post_id' => $post->id,
+        ]);
+
+        $share->load(['user', 'sharedPost.user']);
+
+        return response()->json([
+            'shares_count' => $post->fresh()->shares_count,
+            'html'         => view('posts.partials.post-card', ['post' => $share])->render(),
+        ]);
+    }
+
+    /**
+     * Owner-only: toggle whether new comments can be added to this post.
+     */
+    public function toggleComments(Request $request, Post $post)
+    {
+        abort_unless($post->user_id === $request->user()->id, 403);
+
+        $post->update(['comments_enabled' => ! $post->comments_enabled]);
+
+        return response()->json(['comments_enabled' => $post->comments_enabled]);
+    }
+}
