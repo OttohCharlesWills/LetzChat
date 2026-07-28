@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use App\Models\PostImage;
 
 class Post extends Model
 {
@@ -20,6 +21,7 @@ class Post extends Model
         'is_pinned',
         'comments_enabled', 
         'shared_post_id',
+        'group_id', 
 
     ];
 
@@ -146,6 +148,11 @@ class Post extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+        public function images()
+    {
+        return $this->hasMany(PostImage::class)->orderBy('position');
     }
 
     /**

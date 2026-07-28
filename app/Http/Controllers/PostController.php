@@ -6,6 +6,7 @@ use App\Models\Comment;
 use App\Models\Post;
 use App\Models\Reaction;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class PostController extends Controller
 {
@@ -21,7 +22,7 @@ class PostController extends Controller
     {
         $viewer = $request->user();
 
-        $posts = Post::with('user')
+        $posts = Post::with(['user', 'images'])
             ->visibleTo($viewer)
             ->orderByDesc('is_pinned')
             ->orderByDesc('created_at')
@@ -36,35 +37,87 @@ class PostController extends Controller
     /**
      * Create a new (text-only, for now) post.
      */
+    // public function store(Request $request)
+    // {
+    //     $validated = $request->validate([
+    //         'body' => ['required', 'string', 'max:5000'],
+    //         'visibility' => ['required', 'in:public,friends,custom,private'],
+    //         'excluded_user_ids' => ['nullable', 'array'],
+    //         'excluded_user_ids.*' => ['exists:users,id'],
+    //     ]);
+
+    //     $post = $request->user()->posts()->create([
+    //         'body' => $validated['body'],
+    //         'visibility' => $validated['visibility'],
+    //     ]);
+
+    //     if ($validated['visibility'] === 'custom' && ! empty($validated['excluded_user_ids'])) {
+    //         $post->excludedUsers()->sync($validated['excluded_user_ids']);
+    //     }
+
+    //     $post->load('user');
+
+    //     if ($request->wantsJson()) {
+    //         return response()->json([
+    //             'message' => __('Your post has been shared.'),
+    //             'html' => view('posts.partials.post-card', ['post' => $post])->render(),
+    //         ]);
+    //     }
+
+    //     return back()->with('status', __('Your post has been shared.'));
+    // }
+
     public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'body' => ['required', 'string', 'max:5000'],
-            'visibility' => ['required', 'in:public,friends,custom,private'],
-            'excluded_user_ids' => ['nullable', 'array'],
-            'excluded_user_ids.*' => ['exists:users,id'],
-        ]);
+{
+    $validated = $request->validate([
+        'body' => ['nullable', 'string', 'max:5000'],
+        'visibility' => ['required', 'in:public,friends,custom,private'],
+        'excluded_user_ids' => ['nullable', 'array'],
+        'excluded_user_ids.*' => ['exists:users,id'],
+        'images' => ['nullable', 'array', 'max:10'],
+        'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:8192'],
+    ]);
 
-        $post = $request->user()->posts()->create([
-            'body' => $validated['body'],
-            'visibility' => $validated['visibility'],
-        ]);
+    // A post needs at least a body or at least one image
+    if (empty($validated['body']) && ! $request->hasFile('images')) {
+        return response()->json([
+            'message' => __('A post needs either text or at least one image.'),
+        ], 422);
+    }
 
-        if ($validated['visibility'] === 'custom' && ! empty($validated['excluded_user_ids'])) {
-            $post->excludedUsers()->sync($validated['excluded_user_ids']);
-        }
+    $post = $request->user()->posts()->create([
+        'body' => $validated['body'] ?? null,
+        'visibility' => $validated['visibility'],
+    ]);
 
-        $post->load('user');
+    if ($request->hasFile('images')) {
+        foreach ($request->file('images') as $index => $file) {
+            $path = $file->store('posts', 'cloudinary');
+            $url = Storage::disk('cloudinary')->url($path);
 
-        if ($request->wantsJson()) {
-            return response()->json([
-                'message' => __('Your post has been shared.'),
-                'html' => view('posts.partials.post-card', ['post' => $post])->render(),
+            $post->images()->create([
+                'url' => $url,
+                'public_id' => $path,
+                'position' => $index,
             ]);
         }
-
-        return back()->with('status', __('Your post has been shared.'));
     }
+
+    if ($validated['visibility'] === 'custom' && ! empty($validated['excluded_user_ids'])) {
+        $post->excludedUsers()->sync($validated['excluded_user_ids']);
+    }
+
+    $post->load(['user', 'images']);
+
+    if ($request->wantsJson()) {
+        return response()->json([
+            'message' => __('Your post has been shared.'),
+            'html' => view('posts.partials.post-card', ['post' => $post])->render(),
+        ]);
+    }
+
+    return back()->with('status', __('Your post has been shared.'));
+}
 
     /**
      * Delete a post (soft delete). Author only.

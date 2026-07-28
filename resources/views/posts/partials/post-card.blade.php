@@ -87,6 +87,19 @@
 
     <div class="pc-body">{{ $post->body }}</div>
 
+    @if ($post->images->isNotEmpty())
+        <div class="pc-images pc-images-count-{{ min($post->images->count(), 5) }}">
+            @foreach ($post->images->take(5) as $index => $image)
+                <div class="pc-image-item" data-full="{{ $image->url }}">
+                    <img src="{{ $image->url }}" alt="" loading="lazy">
+                    @if ($index === 4 && $post->images->count() > 5)
+                        <div class="pc-image-more-overlay">+{{ $post->images->count() - 5 }}</div>
+                    @endif
+                </div>
+            @endforeach
+        </div>
+    @endif
+
     <div class="pc-actions">
         <div class="pc-reaction-wrap">
             <button type="button"
@@ -155,6 +168,11 @@
     </div>
 </div>
 
+<div class="pc-lightbox-overlay" id="pcLightboxOverlay">
+    <button type="button" class="pc-lightbox-close" id="pcLightboxClose">&times;</button>
+    <img src="" alt="" id="pcLightboxImg">
+</div>
+
 @once
     <style>
         :root {
@@ -175,6 +193,130 @@
             --pc-avatar-fallback-bg: #4599ff;
             --pc-avatar-fallback-text: #050505;
             --pc-hover: #3a3b3c;
+        }
+
+        .pc-images {
+            margin-top: 10px;
+            display: grid;
+            gap: 4px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .pc-image-item {
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            background: var(--pc-hover);
+        }
+
+        .pc-image-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* 1 image: full width, natural-ish height */
+        .pc-images-count-1 {
+            grid-template-columns: 1fr;
+        }
+        .pc-images-count-1 .pc-image-item {
+            max-height: 500px;
+        }
+        .pc-images-count-1 img {
+            max-height: 500px;
+            object-fit: contain;
+        }
+
+        /* 2 images: side by side */
+        .pc-images-count-2 {
+            grid-template-columns: 1fr 1fr;
+        }
+        .pc-images-count-2 .pc-image-item {
+            aspect-ratio: 1;
+        }
+
+        /* 3 images: one big left, two stacked right */
+        .pc-images-count-3 {
+            grid-template-columns: 2fr 1fr;
+            grid-template-rows: 1fr 1fr;
+        }
+        .pc-images-count-3 .pc-image-item:nth-child(1) {
+            grid-row: 1 / span 2;
+        }
+        .pc-images-count-3 .pc-image-item {
+            aspect-ratio: 1;
+        }
+
+        /* 4 images: 2x2 grid */
+        .pc-images-count-4 {
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+        }
+        .pc-images-count-4 .pc-image-item {
+            aspect-ratio: 1;
+        }
+
+        /* 5 images: 2 on top, 3 on bottom (last shows +N overlay if more) */
+        .pc-images-count-5 {
+            grid-template-columns: repeat(3, 1fr);
+        }
+        .pc-images-count-5 .pc-image-item:nth-child(1),
+        .pc-images-count-5 .pc-image-item:nth-child(2) {
+            grid-column: span 1;
+        }
+        .pc-images-count-5 .pc-image-item {
+            aspect-ratio: 1;
+        }
+
+        .pc-image-more-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            color: #fff;
+            font-size: 1.6rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ---- Lightbox ---- */
+        .pc-lightbox-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+        }
+
+        .pc-lightbox-overlay.active {
+            display: flex;
+        }
+
+        .pc-lightbox-overlay img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 6px;
+        }
+
+        .pc-lightbox-close {
+            position: absolute;
+            top: 20px;
+            right: 24px;
+            background: rgba(255,255,255,0.15);
+            border: none;
+            color: #fff;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 1.4rem;
+            line-height: 1;
         }
 
         .pc-card {
@@ -689,6 +831,27 @@
     </style>
 
     <script>
+        // ---- Image lightbox ----
+        const lightbox = document.getElementById('pcLightboxOverlay');
+        const lightboxImg = document.getElementById('pcLightboxImg');
+        const lightboxClose = document.getElementById('pcLightboxClose');
+
+        document.addEventListener('click', function (e) {
+        const item = e.target.closest('.pc-image-item');
+        if (item) {
+            lightboxImg.src = item.dataset.full;
+            lightbox.classList.add('active');
+        }
+        });
+
+        lightboxClose.addEventListener('click', () => lightbox.classList.remove('active'));
+        lightbox.addEventListener('click', function (e) {
+        if (e.target === lightbox) lightbox.classList.remove('active');
+        });
+        document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') lightbox.classList.remove('active');
+        });
+
         (function () {
             const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 

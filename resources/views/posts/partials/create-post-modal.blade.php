@@ -5,7 +5,7 @@
             <button type="button" class="cp-close" id="createPostClose" aria-label="{{ __('Close') }}">&times;</button>
         </div>
 
-        <form method="POST" action="{{ route('posts.store') }}" id="createPostForm">
+        <form method="POST" action="{{ route('posts.store') }}" id="createPostForm" enctype="multipart/form-data">
             @csrf
 
             <div class="cp-body">
@@ -35,6 +35,8 @@
 
                 <div class="cp-error" id="cpBodyError" style="display:none;"></div>
 
+                <div class="cp-image-preview" id="cpImagePreview"></div>
+
                 <div class="cp-exclude-picker" id="cpExcludePicker">
                     <div class="cp-exclude-title">{{ __("Don't show this to:") }}</div>
 
@@ -51,7 +53,8 @@
                 <div class="cp-attach-row">
                     <span>{{ __('Add to your post') }}</span>
                     <div class="cp-attach-icons">
-                        <span class="cp-attach-icon" title="{{ __('Coming soon') }}">🖼️</span>
+                        <label for="cpImageInput" class="cp-attach-icon" style="cursor:pointer;" title="{{ __('Add photos') }}">🖼️</label>
+                        <input type="file" name="images[]" id="cpImageInput" accept="image/png,image/jpeg,image/webp" multiple hidden>
                         <span class="cp-attach-icon" title="{{ __('Coming soon') }}">📍</span>
                         <span class="cp-attach-icon" title="{{ __('Coming soon') }}">🙂</span>
                     </div>
@@ -194,6 +197,45 @@
         margin-top: 4px;
     }
 
+    .cp-image-preview {
+        display: none;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-top: 12px;
+    }
+
+    .cp-image-preview.active {
+        display: grid;
+    }
+
+    .cp-preview-item {
+        position: relative;
+        aspect-ratio: 1;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .cp-preview-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .cp-preview-remove {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        background: rgba(0, 0, 0, 0.6);
+        color: #fff;
+        border: none;
+        border-radius: 50%;
+        width: 22px;
+        height: 22px;
+        font-size: 0.85rem;
+        line-height: 1;
+        cursor: pointer;
+    }
+
     .cp-exclude-picker {
         display: none;
         margin-top: 6px;
@@ -237,6 +279,9 @@
         display: flex;
         gap: 10px;
         font-size: 1.15rem;
+    }
+
+    .cp-attach-icons .cp-attach-icon[title="{{ __('Coming soon') }}"] {
         opacity: 0.45;
     }
 
@@ -271,6 +316,11 @@
         const visibilitySelect = document.getElementById('cpVisibility');
         const excludePicker = document.getElementById('cpExcludePicker');
         const bodyError = document.getElementById('cpBodyError');
+        const imageInput = document.getElementById('cpImageInput');
+        const previewBox = document.getElementById('cpImagePreview');
+
+        const MAX_IMAGES = 10;
+        let selectedImages = [];
 
         window.openCreatePostModal = function () {
             overlay.classList.add('active');
@@ -283,10 +333,42 @@
             document.body.style.overflow = '';
         }
 
+        function updatePostButtonState() {
+            const hasText = textarea.value.trim().length > 0;
+            const hasImages = selectedImages.length > 0;
+            postBtn.disabled = !(hasText || hasImages);
+        }
+
+        function renderPreviews() {
+            previewBox.innerHTML = '';
+            previewBox.classList.toggle('active', selectedImages.length > 0);
+
+            selectedImages.forEach((file, index) => {
+                const url = URL.createObjectURL(file);
+                const item = document.createElement('div');
+                item.className = 'cp-preview-item';
+                item.innerHTML = `
+                    <img src="${url}" alt="">
+                    <button type="button" class="cp-preview-remove" data-index="${index}">&times;</button>
+                `;
+                previewBox.appendChild(item);
+            });
+
+            previewBox.querySelectorAll('.cp-preview-remove').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    selectedImages.splice(Number(this.dataset.index), 1);
+                    renderPreviews();
+                    updatePostButtonState();
+                });
+            });
+        }
+
         function resetForm() {
             form.reset();
             excludePicker.classList.remove('active');
             bodyError.style.display = 'none';
+            selectedImages = [];
+            renderPreviews();
             postBtn.disabled = true;
         }
 
@@ -303,7 +385,7 @@
         });
 
         textarea.addEventListener('input', function () {
-            postBtn.disabled = this.value.trim().length === 0;
+            updatePostButtonState();
             bodyError.style.display = 'none';
         });
 
@@ -311,27 +393,44 @@
             excludePicker.classList.toggle('active', this.value === 'custom');
         });
 
+        imageInput.addEventListener('change', function () {
+            const incoming = Array.from(this.files);
+
+            selectedImages = [...selectedImages, ...incoming].slice(0, MAX_IMAGES);
+            this.value = ''; // allow re-selecting the same file later
+
+            renderPreviews();
+            updatePostButtonState();
+            bodyError.style.display = 'none';
+        });
+
         // ---- AJAX submit: no page reload ----
         form.addEventListener('submit', function (e) {
             e.preventDefault();
 
-            if (!textarea.value.trim()) return;
+            if (!textarea.value.trim() && selectedImages.length === 0) return;
 
             postBtn.disabled = true;
             const originalLabel = postBtn.textContent;
             postBtn.textContent = '{{ __('Posting...') }}';
             bodyError.style.display = 'none';
 
+            const formData = new FormData(form);
+            formData.delete('images[]'); // drop whatever the raw file input holds
+            selectedImages.forEach(file => formData.append('images[]', file));
+
             fetch(form.action, {
                 method: 'POST',
                 headers: { 'Accept': 'application/json' },
-                body: new FormData(form),
+                body: formData,
             })
                 .then(async (response) => {
                     const data = await response.json();
 
                     if (response.status === 422) {
-                        const msg = (data.errors && data.errors.body) ? data.errors.body[0] : data.message;
+                        const msg = (data.errors && (data.errors.body || data.errors.images))
+                            ? (data.errors.body ? data.errors.body[0] : data.errors.images[0])
+                            : data.message;
                         bodyError.textContent = msg;
                         bodyError.style.display = 'block';
                         postBtn.disabled = false;
@@ -357,7 +456,7 @@
                 })
                 .finally(() => {
                     postBtn.textContent = originalLabel;
-                    postBtn.disabled = textarea.value.trim().length === 0;
+                    postBtn.disabled = textarea.value.trim().length === 0 && selectedImages.length === 0;
                 });
         });
     })();

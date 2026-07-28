@@ -4,7 +4,7 @@
 <div class="gr-page">
 
     @if (session('status'))
-        <div class="alert alert-success">{{ session('status') }}</div>
+        @include('friends.flash')
     @endif
 
     <div class="gr-layout">

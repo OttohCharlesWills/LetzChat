@@ -11,7 +11,7 @@
         </a>
 
         <button type="button" class="composer-trigger-pill" id="composerTriggerBtn" onclick="openCreatePostModal()">
-            {{ __("What's on your mind, :name?", ['name' => auth()->user()->first_name]) }}
+            {{ __("Share Your Thoughts, :name", ['name' => auth()->user()->first_name]) }}
         </button>
     </div>
 
