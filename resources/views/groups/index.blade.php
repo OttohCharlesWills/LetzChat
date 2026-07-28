@@ -77,7 +77,7 @@
                                 <div class="gr-discover-tile">
                                     <div class="gr-discover-cover">
                                         @if ($group->cover_photo)
-                                            <img src="{{ asset('storage/' . $group->cover_photo) }}">
+                                            <img src="{{ $group->cover_photo }}">
                                         @endif
                                     </div>
                                     <div class="gr-discover-body">
@@ -107,7 +107,7 @@
                                 <div class="gr-discover-tile">
                                     <div class="gr-discover-cover">
                                         @if ($group->cover_photo)
-                                            <img src="{{ asset('storage/' . $group->cover_photo) }}">
+                                            <img src="{{ $group->cover_photo}}">
                                         @endif
                                     </div>
                                     <div class="gr-discover-body">
