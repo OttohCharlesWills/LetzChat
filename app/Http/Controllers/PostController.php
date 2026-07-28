@@ -7,6 +7,7 @@ use App\Models\Post;
 use App\Models\Reaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use App\Models\Friendship;
 
 class PostController extends Controller
 {
@@ -18,21 +19,73 @@ class PostController extends Controller
     /**
      * Show the feed: composer + posts visible to the logged-in user.
      */
+    // public function index(Request $request)
+    // {
+    //     $viewer = $request->user();
+
+    //     $posts = Post::with(['user', 'images'])
+    //         ->visibleTo($viewer)
+    //         ->orderByDesc('is_pinned')
+    //         ->orderByDesc('created_at')
+    //         ->paginate(10);
+
+    //     // Needed for the "custom" visibility exclusion picker in the composer.
+    //     $friends = $viewer->friends();
+
+    //     return view('posts.index', compact('posts', 'friends'));
+    // }
+
     public function index(Request $request)
-    {
-        $viewer = $request->user();
+{
+    $viewer = $request->user();
 
-        $posts = Post::with(['user', 'images'])
-            ->visibleTo($viewer)
-            ->orderByDesc('is_pinned')
-            ->orderByDesc('created_at')
-            ->paginate(10);
+    // Tier 1: direct friends (accepted friendship, either direction)
+    $friendIds = Friendship::accepted()
+        ->involvingUser($viewer->id)
+        ->get()
+        ->map(fn ($f) => $f->requester_id === $viewer->id ? $f->addressee_id : $f->requester_id)
+        ->unique()
+        ->values();
 
-        // Needed for the "custom" visibility exclusion picker in the composer.
-        $friends = $viewer->friends();
+    // Tier 2: friends-of-friends — friends of everyone in $friendIds,
+    // excluding the viewer themself and anyone already a direct friend.
+    $friendOfFriendIds = collect();
 
-        return view('posts.index', compact('posts', 'friends'));
+    if ($friendIds->isNotEmpty()) {
+        $friendOfFriendIds = Friendship::accepted()
+            ->where(function ($q) use ($friendIds) {
+                $q->whereIn('requester_id', $friendIds)
+                  ->orWhereIn('addressee_id', $friendIds);
+            })
+            ->get()
+            ->map(fn ($f) => $friendIds->contains($f->requester_id) ? $f->addressee_id : $f->requester_id)
+            ->unique()
+            ->reject(fn ($id) => $id === $viewer->id || $friendIds->contains($id))
+            ->values();
     }
+
+    // Build a SQL CASE expression to assign each post a feed "tier":
+    // 0 = viewer's own post, 1 = friend, 2 = friend-of-friend, 3 = everyone else.
+    $friendList = $friendIds->map(fn ($id) => (int) $id)->implode(',') ?: '0';
+    $fofList = $friendOfFriendIds->map(fn ($id) => (int) $id)->implode(',') ?: '0';
+
+    $posts = Post::with(['user', 'images'])
+        ->visibleTo($viewer)
+        ->selectRaw("posts.*, CASE
+            WHEN posts.user_id = ? THEN 0
+            WHEN posts.user_id IN ({$friendList}) THEN 1
+            WHEN posts.user_id IN ({$fofList}) THEN 2
+            ELSE 3
+        END as feed_rank", [$viewer->id])
+        ->orderBy('feed_rank')
+        ->orderByDesc('is_pinned')
+        ->orderByDesc('created_at')
+        ->paginate(10);
+
+    $friends = $viewer->friends();
+
+    return view('posts.index', compact('posts', 'friends'));
+}
 
     /**
      * Create a new (text-only, for now) post.
