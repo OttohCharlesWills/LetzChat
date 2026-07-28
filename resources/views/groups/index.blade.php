@@ -46,7 +46,7 @@
                     @foreach ($managedGroups as $group)
                         <a href="{{ route('groups.show', $group->uuid) }}" class="gr-managed-item">
                             @if ($group->cover_photo)
-                                <img src="{{ asset('storage/' . $group->cover_photo) }}" class="gr-managed-thumb">
+                                <img src="{{ $group->cover_photo }}" class="gr-managed-thumb">
                             @else
                                 <span class="gr-managed-thumb gr-managed-thumb-fallback">
                                     {{ strtoupper(substr($group->name, 0, 1)) }}
