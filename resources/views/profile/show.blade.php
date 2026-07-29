@@ -11,7 +11,7 @@
     <div class="pf-cover-card">
         <div class="pf-cover" id="pfCover">
             @if ($user->cover_photo)
-                <img src="{{ $user->cover_photo }}" class="pf-cover-img" id="pfCoverImg">
+                <img src="{{ $user->profile_photo }}" class="pf-cover-img" id="pfCoverImg">
             @else
                 <img src="" class="pf-cover-img d-none" id="pfCoverImg">
             @endif
