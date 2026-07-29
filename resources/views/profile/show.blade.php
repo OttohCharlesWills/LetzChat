@@ -11,7 +11,7 @@
     <div class="pf-cover-card">
         <div class="pf-cover" id="pfCover">
             @if ($user->cover_photo)
-                <img src="{{ $user->profile_photo }}" class="pf-cover-img" id="pfCoverImg">
+                <img src="{{ $user->cover_photo }}" class="pf-cover-img" id="pfCoverImg">
             @else
                 <img src="" class="pf-cover-img d-none" id="pfCoverImg">
             @endif
@@ -199,7 +199,7 @@
                         @foreach ($friendsPreview as $friend)
                             <a href="{{ route('profile.show', $friend->username) }}" class="pf-friend-tile">
                                 @if ($friend->avatar)
-                                    <img src="{{ asset('storage/' . $friend->avatar) }}" class="pf-friend-avatar">
+                                    <img src="{{ $user->profile_photo }}" class="pf-friend-avatar">
                                 @else
                                     <span class="pf-friend-avatar pf-avatar-fallback">
                                         {{ strtoupper(substr($friend->first_name, 0, 1)) }}
