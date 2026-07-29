@@ -42,7 +42,7 @@ Route::middleware('auth')->prefix('friends')->name('friends.')->group(function (
 
     Route::get('/birthdays', [BirthdayController::class, 'index'])->name('birthdays');
 
-    Route::post('/birthdays/{friend}/message', [BirthdayController::class, 'sendMessage'])->name('friends.birthdays.message');
+    Route::post('/birthdays/{friend}/message', [BirthdayController::class, 'sendMessage'])->name('birthdays.message');
 
 });
 
