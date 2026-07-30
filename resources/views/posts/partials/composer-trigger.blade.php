@@ -1,6 +1,6 @@
 <div class="composer-trigger-card">
     <div class="composer-trigger-row">
-        <a href="{{ route('profile.show', auth()->user()->username) }}">
+        <a href="{{ route('profile.show', auth()->user()->uuid) }}">
             @if (auth()->user()->profile_photo)
                 <img src="{{ auth()->user()->profile_photo }}" class="composer-trigger-avatar" alt="{{ auth()->user()->first_name }}">
             @else

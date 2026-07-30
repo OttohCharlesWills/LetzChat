@@ -10,8 +10,8 @@
 
             <div class="cp-body">
                 <div class="cp-user-row">
-                    @if (auth()->user()->avatar)
-                        <img src="{{ asset('storage/'.auth()->user()->avatar) }}" class="cp-avatar" alt="{{ auth()->user()->first_name }}">
+                    @if (auth()->user()->profile_photo)
+                        <img src="{{ auth()->user()->profile_photo }}" class="cp-avatar" alt="{{ auth()->user()->first_name }}">
                     @else
                         <div class="cp-avatar-fallback">
                             {{ strtoupper(mb_substr(auth()->user()->first_name, 0, 1)) }}
@@ -37,6 +37,13 @@
 
                 <div class="cp-image-preview" id="cpImagePreview"></div>
 
+                <div class="cp-video-preview" id="cpVideoPreview"></div>
+
+                <div class="cp-upload-progress" id="cpUploadProgress" style="display:none;">
+                    <div class="cp-upload-progress-bar" id="cpUploadProgressBar"></div>
+                    <span class="cp-upload-progress-label" id="cpUploadProgressLabel">{{ __('Uploading video...') }} 0%</span>
+                </div>
+
                 <div class="cp-exclude-picker" id="cpExcludePicker">
                     <div class="cp-exclude-title">{{ __("Don't show this to:") }}</div>
 
@@ -53,8 +60,12 @@
                 <div class="cp-attach-row">
                     <span>{{ __('Add to your post') }}</span>
                     <div class="cp-attach-icons">
-                        <label for="cpImageInput" class="cp-attach-icon" style="cursor:pointer;" title="{{ __('Add photos') }}">🖼️</label>
+                        <label for="cpImageInput" class="cp-attach-icon" id="cpImageIconLabel" style="cursor:pointer;" title="{{ __('Add photos') }}">🖼️</label>
                         <input type="file" name="images[]" id="cpImageInput" accept="image/png,image/jpeg,image/webp" multiple hidden>
+
+                        <label for="cpVideoInput" class="cp-attach-icon" id="cpVideoIconLabel" style="cursor:pointer;" title="{{ __('Add a video') }}">🎥</label>
+                        <input type="file" name="video" id="cpVideoInput" accept="video/mp4,video/quicktime,video/webm" hidden>
+
                         <span class="cp-attach-icon" title="{{ __('Coming soon') }}">📍</span>
                         <span class="cp-attach-icon" title="{{ __('Coming soon') }}">🙂</span>
                     </div>
@@ -236,6 +247,58 @@
         cursor: pointer;
     }
 
+    .cp-video-preview {
+        display: none;
+        position: relative;
+        margin-top: 12px;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #000;
+    }
+
+    .cp-video-preview.active {
+        display: block;
+    }
+
+    .cp-video-preview video {
+        width: 100%;
+        max-height: 320px;
+        display: block;
+    }
+
+    .cp-video-preview .cp-preview-remove {
+        top: 8px;
+        right: 8px;
+    }
+
+    .cp-upload-progress {
+        margin-top: 10px;
+        background: var(--sb-hover);
+        border-radius: 8px;
+        overflow: hidden;
+        position: relative;
+        height: 26px;
+    }
+
+    .cp-upload-progress-bar {
+        height: 100%;
+        width: 0%;
+        background: var(--sb-avatar-fallback-bg);
+        transition: width 0.15s ease;
+    }
+
+    .cp-upload-progress-label {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--sb-text);
+        mix-blend-mode: difference;
+    }
+
     .cp-exclude-picker {
         display: none;
         margin-top: 6px;
@@ -285,6 +348,11 @@
         opacity: 0.45;
     }
 
+    .cp-attach-icon.cp-icon-disabled {
+        opacity: 0.3;
+        pointer-events: none;
+    }
+
     .cp-footer {
         padding: 12px 16px 16px 16px;
     }
@@ -316,11 +384,22 @@
         const visibilitySelect = document.getElementById('cpVisibility');
         const excludePicker = document.getElementById('cpExcludePicker');
         const bodyError = document.getElementById('cpBodyError');
+
         const imageInput = document.getElementById('cpImageInput');
         const previewBox = document.getElementById('cpImagePreview');
+        const imageIconLabel = document.getElementById('cpImageIconLabel');
+
+        const videoInput = document.getElementById('cpVideoInput');
+        const videoPreviewBox = document.getElementById('cpVideoPreview');
+        const videoIconLabel = document.getElementById('cpVideoIconLabel');
+
+        const progressWrap = document.getElementById('cpUploadProgress');
+        const progressBar = document.getElementById('cpUploadProgressBar');
+        const progressLabel = document.getElementById('cpUploadProgressLabel');
 
         const MAX_IMAGES = 10;
         let selectedImages = [];
+        let selectedVideo = null;
 
         window.openCreatePostModal = function () {
             overlay.classList.add('active');
@@ -336,7 +415,17 @@
         function updatePostButtonState() {
             const hasText = textarea.value.trim().length > 0;
             const hasImages = selectedImages.length > 0;
-            postBtn.disabled = !(hasText || hasImages);
+            const hasVideo = !!selectedVideo;
+            postBtn.disabled = !(hasText || hasImages || hasVideo);
+        }
+
+        // Images and video are mutually exclusive for now (like most
+        // platforms) — picking one disables the other icon. This keeps
+        // the upload flow simple; can be revisited later if mixed
+        // image+video posts are ever wanted.
+        function syncAttachIconAvailability() {
+            imageIconLabel.classList.toggle('cp-icon-disabled', !!selectedVideo);
+            videoIconLabel.classList.toggle('cp-icon-disabled', selectedImages.length > 0);
         }
 
         function renderPreviews() {
@@ -358,8 +447,33 @@
                 btn.addEventListener('click', function () {
                     selectedImages.splice(Number(this.dataset.index), 1);
                     renderPreviews();
+                    syncAttachIconAvailability();
                     updatePostButtonState();
                 });
+            });
+        }
+
+        function renderVideoPreview() {
+            videoPreviewBox.innerHTML = '';
+
+            if (!selectedVideo) {
+                videoPreviewBox.classList.remove('active');
+                return;
+            }
+
+            const url = URL.createObjectURL(selectedVideo);
+            videoPreviewBox.classList.add('active');
+            videoPreviewBox.innerHTML = `
+                <video src="${url}" controls></video>
+                <button type="button" class="cp-preview-remove" id="cpVideoRemoveBtn">&times;</button>
+            `;
+
+            document.getElementById('cpVideoRemoveBtn').addEventListener('click', function () {
+                selectedVideo = null;
+                videoInput.value = '';
+                renderVideoPreview();
+                syncAttachIconAvailability();
+                updatePostButtonState();
             });
         }
 
@@ -368,7 +482,13 @@
             excludePicker.classList.remove('active');
             bodyError.style.display = 'none';
             selectedImages = [];
+            selectedVideo = null;
+            videoInput.value = '';
             renderPreviews();
+            renderVideoPreview();
+            syncAttachIconAvailability();
+            progressWrap.style.display = 'none';
+            progressBar.style.width = '0%';
             postBtn.disabled = true;
         }
 
@@ -397,18 +517,69 @@
             const incoming = Array.from(this.files);
 
             selectedImages = [...selectedImages, ...incoming].slice(0, MAX_IMAGES);
-            this.value = ''; // allow re-selecting the same file later
+            this.value = '';
 
             renderPreviews();
+            syncAttachIconAvailability();
             updatePostButtonState();
             bodyError.style.display = 'none';
         });
+
+        videoInput.addEventListener('change', function () {
+            if (this.files && this.files[0]) {
+                selectedVideo = this.files[0];
+            }
+
+            renderVideoPreview();
+            syncAttachIconAvailability();
+            updatePostButtonState();
+            bodyError.style.display = 'none';
+        });
+
+        // Wraps XHR in a promise so we can track upload progress,
+        // which fetch() does not expose.
+        function uploadVideoWithProgress(postId, videoFile) {
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+                const videoFormData = new FormData();
+                videoFormData.append('video', videoFile);
+                videoFormData.append('type', 'video');
+
+                xhr.open('POST', `/posts/${postId}/videos`, true);
+                xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken);
+                xhr.setRequestHeader('Accept', 'application/json');
+
+                xhr.upload.addEventListener('progress', function (e) {
+                    if (e.lengthComputable) {
+                        const pct = Math.round((e.loaded / e.total) * 100);
+                        progressBar.style.width = pct + '%';
+                        progressLabel.textContent = `{{ __('Uploading video...') }} ${pct}%`;
+                    }
+                });
+
+                xhr.onload = function () {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        resolve(JSON.parse(xhr.responseText));
+                    } else {
+                        reject(new Error('Video upload failed'));
+                    }
+                };
+
+                xhr.onerror = function () {
+                    reject(new Error('Video upload failed'));
+                };
+
+                xhr.send(videoFormData);
+            });
+        }
 
         // ---- AJAX submit: no page reload ----
         form.addEventListener('submit', function (e) {
             e.preventDefault();
 
-            if (!textarea.value.trim() && selectedImages.length === 0) return;
+            if (!textarea.value.trim() && selectedImages.length === 0 && !selectedVideo) return;
 
             postBtn.disabled = true;
             const originalLabel = postBtn.textContent;
@@ -416,7 +587,8 @@
             bodyError.style.display = 'none';
 
             const formData = new FormData(form);
-            formData.delete('images[]'); // drop whatever the raw file input holds
+            formData.delete('images[]');
+            formData.delete('video'); // video goes through a separate upload after the post exists
             selectedImages.forEach(file => formData.append('images[]', file));
 
             fetch(form.action, {
@@ -428,35 +600,60 @@
                     const data = await response.json();
 
                     if (response.status === 422) {
-                        const msg = (data.errors && (data.errors.body || data.errors.images))
-                            ? (data.errors.body ? data.errors.body[0] : data.errors.images[0])
+                        const firstError = data.errors
+                            ? Object.values(data.errors)[0][0]
                             : data.message;
-                        bodyError.textContent = msg;
+                        bodyError.textContent = firstError;
                         bodyError.style.display = 'block';
                         postBtn.disabled = false;
                         postBtn.textContent = originalLabel;
-                        return;
+                        return null;
                     }
 
                     if (!response.ok) {
                         throw new Error('Request failed');
                     }
 
-                    // Hand the rendered post HTML to whatever's showing the feed.
-                    document.dispatchEvent(new CustomEvent('post:created', {
-                        detail: { html: data.html, message: data.message },
-                    }));
+                    return data;
+                })
+                .then((data) => {
+                    if (!data) return; // validation error already handled above
 
-                    resetForm();
-                    closeModal();
+                    if (!selectedVideo) {
+                        document.dispatchEvent(new CustomEvent('post:created', {
+                            detail: { html: data.html, message: data.message },
+                        }));
+                        resetForm();
+                        closeModal();
+                        return;
+                    }
+
+                    // Post created — now upload the attached video against it.
+                    postBtn.textContent = '{{ __('Uploading video...') }}';
+                    progressWrap.style.display = 'block';
+
+                    uploadVideoWithProgress(data.id, selectedVideo)
+                        .then(() => {
+                            document.dispatchEvent(new CustomEvent('post:created', {
+                                detail: { html: data.html, message: data.message },
+                            }));
+                            resetForm();
+                            closeModal();
+                        })
+                        .catch(() => {
+                            bodyError.textContent = '{{ __('Post was created, but the video failed to upload. Please try adding it again.') }}';
+                            bodyError.style.display = 'block';
+                            postBtn.disabled = false;
+                            postBtn.textContent = originalLabel;
+                            progressWrap.style.display = 'none';
+                        });
                 })
                 .catch(() => {
                     bodyError.textContent = '{{ __('Something went wrong. Please try again.') }}';
                     bodyError.style.display = 'block';
-                })
-                .finally(() => {
+                    postBtn.disabled = false;
                     postBtn.textContent = originalLabel;
-                    postBtn.disabled = textarea.value.trim().length === 0 && selectedImages.length === 0;
+                    progressWrap.style.display = 'none';
                 });
         });
     })();

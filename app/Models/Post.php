@@ -165,6 +165,23 @@ class Post extends Model
             ->withTimestamps();
     }
 
+
+        public function videos()
+        {
+            return $this->hasMany(PostVideo::class)->orderBy('position');
+        }
+
+        // Handy scoped relations for later, once reels get their own feed/UI
+        public function regularVideos()
+        {
+            return $this->videos()->where('type', 'video');
+        }
+
+        public function reels()
+        {
+            return $this->videos()->where('type', 'reel');
+        }
+
     /**
      * Scope: only posts the given (authenticated) viewer is allowed to see.
      *

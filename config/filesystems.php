@@ -70,6 +70,17 @@ return [
             'prefix' => env('CLOUDINARY_PREFIX'),
         ],
 
+        'backblaze' => [
+            'driver' => 's3',
+            'key' => env('BACKBLAZE_KEY'),
+            'secret' => env('BACKBLAZE_SECRET'),
+            'region' => env('BACKBLAZE_REGION'),
+            'bucket' => env('BACKBLAZE_BUCKET'),
+            'endpoint' => env('BACKBLAZE_ENDPOINT'),
+            'use_path_style_endpoint' => false,
+            'visibility' => 'private',
+        ],
+
     ],
 
     /*

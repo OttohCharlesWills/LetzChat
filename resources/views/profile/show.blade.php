@@ -82,12 +82,12 @@
                         <i class="bi bi-pencil-fill"></i> {{ __('Edit Profile') }}
                     </a>
                 @else
-                    <form method="POST" action="{{ route('friends.request', $user->uuid) }}" class="d-inline">
+                    {{-- <form method="POST" action="{{ route('friends.request', $user->uuid) }}" class="d-inline">
                         @csrf
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-person-plus-fill"></i> {{ __('Add Friend') }}
                         </button>
-                    </form>
+                    </form> --}}
 
                     <form method="POST"
                           action="{{ $isFollowing ? route('follow.destroy', $user->uuid) : route('follow.store', $user->uuid) }}"
@@ -197,9 +197,9 @@
                 @else
                     <div class="pf-friends-grid">
                         @foreach ($friendsPreview as $friend)
-                            <a href="{{ route('profile.show', $friend->username) }}" class="pf-friend-tile">
-                                @if ($friend->avatar)
-                                    <img src="{{ $user->profile_photo }}" class="pf-friend-avatar">
+                            <a href="{{ route('profile.show', $friend->uuid) }}" class="pf-friend-tile">
+                                @if ($friend->profile_photo)
+                                    <img src="{{ $friend->profile_photo }}" class="pf-friend-avatar">
                                 @else
                                     <span class="pf-friend-avatar pf-avatar-fallback">
                                         {{ strtoupper(substr($friend->first_name, 0, 1)) }}

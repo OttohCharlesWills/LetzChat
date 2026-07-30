@@ -18,53 +18,91 @@ class ProfileController extends Controller
      * pretty (/soniasocials), so we deliberately look this up by
      * username manually instead of relying on implicit route binding.
      */
-    public function show(string $username)
-    {
-        $user = User::where('username', $username)->firstOrFail();
+    // public function show(string $username)
+    // {
+    //     $user = User::where('username', $username)->firstOrFail();
 
-        $isOwnProfile = Auth::check() && Auth::id() === $user->id;
+    //     $isOwnProfile = Auth::check() && Auth::id() === $user->id;
 
-        // Whether the CURRENT VIEWER already follows this profile's owner —
-        // powers the Follow/Following button in the identity section,
-        // same pattern used on the post card.
-        $isFollowing = !$isOwnProfile && Auth::check() && $user->isFollowedBy(Auth::user());
+    //     // Whether the CURRENT VIEWER already follows this profile's owner —
+    //     // powers the Follow/Following button in the identity section,
+    //     // same pattern used on the post card.
+    //     $isFollowing = !$isOwnProfile && Auth::check() && $user->isFollowedBy(Auth::user());
 
-        $friends = $user->friends();
-        $friendsCount = $friends->count();
-        $friendsPreview = $friends->take(6);
+    //     $friends = $user->friends();
+    //     $friendsCount = $friends->count();
+    //     $friendsPreview = $friends->take(6);
 
-        $postsQuery = \App\Models\Post::where('user_id', $user->id)
-            ->with('user')
-            ->orderByDesc('is_pinned')
-            ->orderByDesc('created_at');
+    //     $postsQuery = \App\Models\Post::where('user_id', $user->id)
+    //         ->with('user')
+    //         ->orderByDesc('is_pinned')
+    //         ->orderByDesc('created_at');
 
-        if (!$isOwnProfile) {
-            // Strangers/guests only ever see 'public' posts. If the viewer is
-            // an accepted friend of the profile owner, they also see 'friends'
-            // visibility posts. 'private' and 'custom' never show here unless
-            // you're the owner — 'custom' would need its own audience-list
-            // check once that feature actually exists.
-            $viewerIsFriend = Auth::check() && $user->isFriendsWith(Auth::user());
+    //     if (!$isOwnProfile) {
+    //         // Strangers/guests only ever see 'public' posts. If the viewer is
+    //         // an accepted friend of the profile owner, they also see 'friends'
+    //         // visibility posts. 'private' and 'custom' never show here unless
+    //         // you're the owner — 'custom' would need its own audience-list
+    //         // check once that feature actually exists.
+    //         $viewerIsFriend = Auth::check() && $user->isFriendsWith(Auth::user());
 
-            $postsQuery->where(function ($q) use ($viewerIsFriend) {
-                $q->where('visibility', 'public');
-                if ($viewerIsFriend) {
-                    $q->orWhere('visibility', 'friends');
-                }
-            });
-        }
+    //         $postsQuery->where(function ($q) use ($viewerIsFriend) {
+    //             $q->where('visibility', 'public');
+    //             if ($viewerIsFriend) {
+    //                 $q->orWhere('visibility', 'friends');
+    //             }
+    //         });
+    //     }
 
-        $posts = $postsQuery->paginate(10);
+    //     $posts = $postsQuery->paginate(10);
 
-        return view('profile.show', compact(
-            'user',
-            'isOwnProfile',
-            'isFollowing',
-            'friendsCount',
-            'friendsPreview',
-            'posts'
-        ));
+    //     return view('profile.show', compact(
+    //         'user',
+    //         'isOwnProfile',
+    //         'isFollowing',
+    //         'friendsCount',
+    //         'friendsPreview',
+    //         'posts'
+    //     ));
+    // }
+
+    public function show(User $user)
+{
+    $isOwnProfile = Auth::check() && Auth::id() === $user->id;
+
+    $isFollowing = !$isOwnProfile && Auth::check() && $user->isFollowedBy(Auth::user());
+
+    $friends = $user->friends();
+    $friendsCount = $friends->count();
+    $friendsPreview = $friends->take(6);
+
+    $postsQuery = \App\Models\Post::where('user_id', $user->id)
+        ->with(['user', 'images'])
+        ->orderByDesc('is_pinned')
+        ->orderByDesc('created_at');
+
+    if (!$isOwnProfile) {
+        $viewerIsFriend = Auth::check() && $user->isFriendsWith(Auth::user());
+
+        $postsQuery->where(function ($q) use ($viewerIsFriend) {
+            $q->where('visibility', 'public');
+            if ($viewerIsFriend) {
+                $q->orWhere('visibility', 'friends');
+            }
+        });
     }
+
+    $posts = $postsQuery->paginate(10);
+
+    return view('profile.show', compact(
+        'user',
+        'isOwnProfile',
+        'isFollowing',
+        'friendsCount',
+        'friendsPreview',
+        'posts'
+    ));
+}
 
     /**
      * Edit form for the currently authenticated user's own profile.

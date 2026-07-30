@@ -74,6 +74,8 @@ Route::post('/posts/{post}/comments', [PostController::class, 'storeComment'])->
 Route::delete('/comments/{comment}', [PostController::class, 'destroyComment'])->name('comments.destroy');
 Route::post('/comments/{comment}/react', [PostController::class, 'reactComment'])->name('comments.react');
 
+Route::post('/posts/{post}/videos', [PostController::class, 'storeVideo'])->name('posts.videos.store');
+
 
 
 // PROFILE ROUTE LAST ROUTES
@@ -117,6 +119,9 @@ Route::middleware('auth')->prefix('groups')->name('groups.')->group(function () 
 
 
 // IMPORTANT: this must be the very LAST route in the file.
-Route::get('/{username}', [ProfileController::class, 'show'])
-    ->where('username', '[A-Za-z0-9_.]+')
+// Route::get('/{username}', [ProfileController::class, 'show'])
+//     ->where('username', '[A-Za-z0-9_.]+')
+//     ->name('profile.show');
+
+Route::get('/profile/{user:uuid}', [ProfileController::class, 'show'])
     ->name('profile.show');

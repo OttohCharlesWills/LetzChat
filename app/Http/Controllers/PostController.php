@@ -69,7 +69,7 @@ class PostController extends Controller
     $friendList = $friendIds->map(fn ($id) => (int) $id)->implode(',') ?: '0';
     $fofList = $friendOfFriendIds->map(fn ($id) => (int) $id)->implode(',') ?: '0';
 
-    $posts = Post::with(['user', 'images'])
+    $posts = Post::with(['user', 'images', 'videos'])
         ->visibleTo($viewer)
         ->selectRaw("posts.*, CASE
             WHEN posts.user_id = ? THEN 0
@@ -166,10 +166,49 @@ class PostController extends Controller
         return response()->json([
             'message' => __('Your post has been shared.'),
             'html' => view('posts.partials.post-card', ['post' => $post])->render(),
+            'id' => $post->uuid,   // <-- add this line
         ]);
     }
 
     return back()->with('status', __('Your post has been shared.'));
+}
+
+public function storeVideo(Request $request, Post $post)
+{
+    // Only the post owner can attach a video to their own post
+    abort_unless($post->user_id === $request->user()->id, 403);
+
+    $validated = $request->validate([
+        'video' => ['required', 'file', 'mimes:mp4,mov,webm', 'max:102400'], // 100MB cap
+        'type' => ['nullable', 'in:video,reel'],
+    ]);
+
+    $file = $request->file('video');
+    $type = $validated['type'] ?? 'video';
+
+    $folder = $type === 'reel' ? 'posts/reels' : 'posts/videos';
+    $path = $file->store($folder, 'backblaze');
+
+    $postVideo = $post->videos()->create([
+        'type' => $type,
+        'path' => $path,
+        'original_name' => $file->getClientOriginalName(),
+        'size_bytes' => $file->getSize(),
+        'position' => $post->videos()->count(),
+    ]);
+
+    if ($request->wantsJson()) {
+        return response()->json([
+            'message' => __('Video uploaded.'),
+            'video' => [
+                'id' => $postVideo->id,
+                'type' => $postVideo->type,
+                'url' => $postVideo->url(),
+            ],
+        ]);
+    }
+
+    return back()->with('status', __('Video uploaded.'));
 }
 
     /**

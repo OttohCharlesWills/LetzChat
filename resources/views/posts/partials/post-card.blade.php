@@ -24,7 +24,7 @@
         @endif
 
         <div class="pc-header-body">
-            <a href="{{ route('profile.show', $post->user->username) }}" class="pc-author">
+            <a href="{{ route('profile.show', $post->user->uuid) }}" class="pc-author">
                 {{ $post->user->first_name }} {{ $post->user->last_name }}
             </a>
 
@@ -96,6 +96,25 @@
                         <div class="pc-image-more-overlay">+{{ $post->images->count() - 5 }}</div>
                     @endif
                 </div>
+            @endforeach
+        </div>
+    @endif
+
+    @if ($post->videos->isNotEmpty())
+        <div class="pc-videos">
+            @foreach ($post->videos as $video)
+                @php
+                    $ext = pathinfo($video->path, PATHINFO_EXTENSION);
+                    $mime = match ($ext) {
+                        'webm' => 'video/webm',
+                        'mov'  => 'video/quicktime',
+                        default => 'video/mp4',
+                    };
+                @endphp
+                <video class="pc-video" controls preload="metadata" playsinline>
+                    <source src="{{ $video->url() }}" type="{{ $mime }}">
+                    {{ __('Your browser does not support the video tag.') }}
+                </video>
             @endforeach
         </div>
     @endif
@@ -280,6 +299,22 @@
             display: flex;
             align-items: center;
             justify-content: center;
+        }
+
+        /* ---- Videos ---- */
+        .pc-videos {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .pc-video {
+            width: 100%;
+            max-height: 500px;
+            border-radius: 10px;
+            background: #000;
+            display: block;
         }
 
         /* ---- Lightbox ---- */
