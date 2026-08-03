@@ -2,7 +2,7 @@
     <div class="sb-wrap">
 
         {{-- Profile link {{ route('profile.show', auth()->user()->username) }} --}}
-        <a href="{{ route('profile.show', auth()->user()->username) }}" class="sb-item sb-profile">
+        <a href="{{ route('profile.show', auth()->user()->uuid) }}" class="sb-item sb-profile">
             @if (auth()->user()->profile_photo)
                 <img src="{{ auth()->user()->profile_photo }}"
                     alt="{{ auth()->user()->first_name }}"
