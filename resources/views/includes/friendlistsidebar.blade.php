@@ -19,20 +19,20 @@
  
         <div class="fl-list" id="flList">
             @forelse ($friends as $friend)
-                <div
+               <div
                     class="fl-item"
                     tabindex="0"
                     role="button"
                     data-name="{{ strtolower($friend->first_name . ' ' . $friend->last_name) }}"
                     data-fullname="{{ $friend->first_name }} {{ $friend->last_name }}"
                     data-username="{{ $friend->username }}"
-                    data-avatar="{{ $friend->avatar ? asset('storage/' . $friend->avatar) : '' }}"
+                    data-avatar="{{ $friend->profile_photo ?? '' }}"
                     data-initial="{{ strtoupper(substr($friend->first_name, 0, 1)) }}"
                     data-mutual="{{ $friend->mutual_count ?? 0 }}"
                     data-friendship-id="{{ $friend->friendship_id }}"
                 >
-                    @if ($friend->avatar)
-                        <img src="{{ asset('storage/' . $friend->avatar) }}" class="fl-avatar">
+                    @if ($friend->profile_photo)
+                        <img src="{{ $friend->profile_photo }}" class="fl-avatar">
                     @else
                         <span class="fl-avatar fl-avatar-fallback">
                             {{ strtoupper(substr($friend->first_name, 0, 1)) }}
@@ -49,7 +49,7 @@
                     <span class="fl-item-menu" onclick="event.stopPropagation(); toggleFlMenu(this)">
                         <i class="bi bi-three-dots"></i>
  
-                        <div class="fl-dropdown" onclick="event.stopPropagation()">
+                        <div class="fl-dropdown" onclick="if (!event.target.closest('[data-open-messenger]')) event.stopPropagation()">
                             {{-- Unfollow: hides their posts from your feed without unfriending.
                                  No backend route yet — wire this to whatever your feed/follow
                                  logic ends up being (e.g. a follows table or a flag on Friendship). --}}
