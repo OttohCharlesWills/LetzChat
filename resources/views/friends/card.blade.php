@@ -9,8 +9,8 @@
 --}}
 <div class="pc-card">
     <a href="" class="pc-photo-link">
-        @if ($person->avatar)
-            <img src="{{ asset('storage/' . $person->avatar) }}" class="pc-photo">
+        @if ($person->profile_photo)
+            <img src="{{ $person->profile_photo }}" class="pc-photo">
         @else
             <span class="pc-photo pc-photo-fallback">
                 {{ strtoupper(substr($person->first_name, 0, 1)) }}
