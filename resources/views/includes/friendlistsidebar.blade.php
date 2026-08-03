@@ -82,27 +82,4 @@
         </div>
     </div>
 
-<script>
-    document.addEventListener('click', function (e) {
-            const trigger = e.target.closest('[data-open-messenger]');
-            if (!trigger) return;
-
-            e.preventDefault();
-            e.stopPropagation();
-
-            const { friendUuid, friendName, friendAvatar, friendInitial } = trigger.dataset;
-
-            chatAvatarWrap.innerHTML = friendAvatar
-                ? `<img src="${friendAvatar}" alt="${friendName}">`
-                : `<span class="nb-mp-avatar-fallback">${friendInitial}</span>`;
-            chatName.textContent = friendName;
-
-            thread.innerHTML = `<p class="nb-mp-thread-placeholder">Loading…</p>`;
-
-            listView.classList.add('d-none');
-            chatView.classList.remove('d-none');
-            messengerPanel.classList.add('show');
-
-            openConversation(friendUuid, friendName);
-        });
-</script>
+    
