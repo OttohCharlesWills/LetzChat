@@ -295,7 +295,7 @@
                             <a href="#" class="btn-fb" data-open-messenger
                                 data-friend-uuid="{{ $data['user']->uuid }}"
                                 data-friend-name="{{ $data['user']->first_name }} {{ $data['user']->last_name }}"
-                                data-friend-avatar="{{ $data['user']->avatar ? asset('storage/'.$data['user']->avatar) : '' }}"
+                                data-friend-avatar="{{ $data['user']->profile_photo ?? '' }}"
                                 data-friend-initial="{{ strtoupper(substr($data['user']->first_name, 0, 1)) }}">
                                     {{ __('Message') }}
                             </a>
@@ -364,8 +364,8 @@
                     <div class="month-grid">
                         @foreach ($group['friends'] as $data)
                             <a href="" class="month-grid-link" title="{{ $data['user']->first_name.' '.$data['user']->last_name.' — '.$data['dob']->format('j F') }}">
-                                @if ($data['user']->avatar)
-                                    <img src="{{ asset('storage/'.$data['user']->avatar) }}" class="month-grid-avatar" alt="{{ $data['user']->first_name }}">
+                                @if ($data['user']->profile_photo)
+                                    <img src="{{ $data['user']->profile_photo  }}" class="month-grid-avatar" alt="{{ $data['user']->first_name }}">
                                 @else
                                     <div class="month-grid-avatar-fallback">
                                         {{ strtoupper(mb_substr($data['user']->first_name, 0, 1)) }}

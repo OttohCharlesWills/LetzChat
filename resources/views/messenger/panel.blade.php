@@ -22,11 +22,11 @@
                          data-name="{{ strtolower($friend->first_name . ' ' . $friend->last_name) }}"
                          data-fullname="{{ $friend->first_name }} {{ $friend->last_name }}"
                          data-username="{{ $friend->username }}"
-                         data-avatar="{{ $friend->avatar ? asset('storage/' . $friend->avatar) : '' }}"
+                         data-friend-avatar="{{ $data['user']->profile_photo ?? '' }}"
                          data-initial="{{ strtoupper(substr($friend->first_name, 0, 1)) }}">
 
-                        @if ($friend->avatar)
-                            <img src="{{ asset('storage/' . $friend->avatar) }}" class="nb-mp-avatar">
+                        @if ($friend->profile_photo)
+                            <img src="{{ $friend->profile_photo }}" class="nb-mp-avatar">
                         @else
                             <span class="nb-mp-avatar nb-mp-avatar-fallback">
                                 {{ strtoupper(substr($friend->first_name, 0, 1)) }}

@@ -58,7 +58,11 @@
                             </button>
  
                             {{-- Message: point this at your actual chat route --}}
-                            <a href="{{ url('/messages/' . $friend->username) }}" class="fl-dropdown-item">
+                            <a href="#" class="fl-dropdown-item" data-open-messenger
+                                data-friend-uuid="{{ $friend->uuid }}"
+                                data-friend-name="{{ $friend->first_name }} {{ $friend->last_name }}"
+                                data-friend-avatar="{{ $friend->profile_photo ?? '' }}"
+                                data-friend-initial="{{ strtoupper(substr($friend->first_name, 0, 1)) }}">
                                 {{ __('Message') }}
                             </a>
  
