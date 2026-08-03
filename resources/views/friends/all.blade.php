@@ -375,7 +375,7 @@
                 ? `${mutual} mutual friend${mutual == 1 ? '' : 's'}`
                 : '';
 
-            flPreviewProfileLink.href = "{{ url('/') }}/profile/{{ friend->uuid }}";
+            flPreviewProfileLink.href = `{{ url('/profile') }}/${friend.uuid}`;
             flPreviewRemoveForm.action = `{{ url('/friends') }}/${friendshipId}`;
 
             flPreviewEmpty.classList.add('d-none');
