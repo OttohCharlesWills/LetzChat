@@ -364,7 +364,7 @@
             flItems.forEach(i => i.classList.remove('active'));
             this.classList.add('active');
 
-            const { avatar, initial, fullname, mutual, username, friendshipId } = this.dataset;
+            const { avatar, initial, fullname, mutual, username, uuid, friendshipId } = this.dataset;
 
             flPreviewAvatarWrap.innerHTML = avatar
                 ? `<img src="${avatar}" alt="${fullname}">`
@@ -375,7 +375,7 @@
                 ? `${mutual} mutual friend${mutual == 1 ? '' : 's'}`
                 : '';
 
-            flPreviewProfileLink.href = `{{ url('/profile') }}/${friend.uuid}`;
+            flPreviewProfileLink.href = `{{ url('/profile') }}/${uuid}`;
             flPreviewRemoveForm.action = `{{ url('/friends') }}/${friendshipId}`;
 
             flPreviewEmpty.classList.add('d-none');

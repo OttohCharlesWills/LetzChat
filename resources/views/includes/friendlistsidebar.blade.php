@@ -30,6 +30,7 @@
                     data-initial="{{ strtoupper(substr($friend->first_name, 0, 1)) }}"
                     data-mutual="{{ $friend->mutual_count ?? 0 }}"
                     data-friendship-id="{{ $friend->friendship_id }}"
+                    data-uuid="{{ $friend->uuid }}"
                 >
                     @if ($friend->profile_photo)
                         <img src="{{ $friend->profile_photo }}" class="fl-avatar">
