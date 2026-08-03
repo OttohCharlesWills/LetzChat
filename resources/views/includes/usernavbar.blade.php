@@ -39,8 +39,23 @@
             </div>
 
             {{-- Notifications (placeholder for now) --}}
-            <div class="nb-icon-btn" title="{{ __('Notifications') }}">
+            {{-- ================= NOTIFICATIONS ================= --}}
+            <div class="nb-icon-btn nb-notif-toggle" id="nbNotifToggle" title="{{ __('Notifications') }}">
                 <i class="bi bi-bell-fill"></i>
+                <span class="nb-notif-badge" id="nbNotifBadge" style="display:none;">0</span>
+            </div>
+
+            <div class="nb-dropdown nb-notif-dropdown" id="nbNotifDropdown">
+                <div class="nb-notif-header">
+                    <span>{{ __('Notifications') }}</span>
+                    <button type="button" id="nbMarkAllReadBtn" class="nb-notif-markall">{{ __('Mark all as read') }}</button>
+                </div>
+
+                <div class="nb-notif-list" id="nbNotifList">
+                    <div class="ntf-empty">{{ __('Loading...') }}</div>
+                </div>
+
+                <a href="{{ route('notifications.index') }}" class="nb-notif-viewall">{{ __('See all notifications') }}</a>
             </div>
 
             {{-- ================= PROFILE DROPDOWN ================= --}}
@@ -264,6 +279,170 @@
         background: var(--nb-hover);
         color: var(--nb-text);
     }
+
+    .nb-notif-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background: #dc3545;
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    min-width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 3px;
+}
+
+    .nb-notif-toggle {
+        position: relative;
+    }
+
+    .nb-notif-dropdown {
+        width: 340px;
+        max-width: 90vw;
+        max-height: 480px;
+        display: none;
+        flex-direction: column;
+    }
+
+    .nb-notif-dropdown.show {
+        display: flex;
+    }
+
+    .nb-notif-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--nb-border);
+        font-weight: 700;
+        font-size: 0.95rem;
+    }
+
+    .nb-notif-markall {
+        background: none;
+        border: none;
+        color: var(--nb-accent);
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+
+    .nb-notif-list {
+        overflow-y: auto;
+        flex: 1;
+    }
+
+    .nb-notif-viewall {
+        display: block;
+        text-align: center;
+        padding: 10px;
+        border-top: 1px solid var(--nb-border);
+        color: var(--nb-accent);
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .ntf-item {
+        display: flex;
+        gap: 10px;
+        padding: 10px 14px;
+        position: relative;
+        text-decoration: none;
+        color: var(--nb-text);
+        cursor: pointer;
+    }
+
+    .ntf-item:hover {
+        background: var(--nb-hover);
+    }
+
+    .ntf-unread {
+        background: rgba(13, 110, 253, 0.06);
+    }
+
+    .ntf-avatar-link {
+        position: relative;
+        flex-shrink: 0;
+        width: 44px;
+        height: 44px;
+    }
+
+    .ntf-avatar {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        object-fit: cover;
+        background: var(--nb-avatar-fallback-bg);
+    }
+
+    .ntf-avatar-fallback {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--nb-avatar-fallback-text);
+        font-weight: 700;
+    }
+
+    .ntf-icon-badge {
+        position: absolute;
+        bottom: -3px;
+        right: -3px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--nb-accent);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.65rem;
+        border: 2px solid var(--nb-bg);
+    }
+
+    .ntf-body {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .ntf-message {
+        font-size: 0.85rem;
+        margin: 0;
+        color: var(--nb-text);
+        line-height: 1.35;
+    }
+
+    .ntf-excerpt {
+        font-size: 0.78rem;
+        color: var(--nb-text-secondary);
+        margin: 2px 0 0;
+        font-style: italic;
+    }
+
+    .ntf-time {
+        font-size: 0.75rem;
+        color: var(--nb-text-secondary);
+    }
+
+    .ntf-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--nb-accent);
+        align-self: center;
+        flex-shrink: 0;
+    }
+
+    .ntf-empty {
+        text-align: center;
+        padding: 30px 14px;
+        color: var(--nb-text-secondary);
+        font-size: 0.85rem;
+    }
 </style>
 
 <script>
@@ -292,5 +471,87 @@
                 e.stopPropagation();
             });
         }
+
+
+    
+    // ---------- Notifications ----------
+    const notifToggle = document.getElementById('nbNotifToggle');
+    const notifDropdown = document.getElementById('nbNotifDropdown');
+    const notifList = document.getElementById('nbNotifList');
+    const notifBadge = document.getElementById('nbNotifBadge');
+    const markAllBtn = document.getElementById('nbMarkAllReadBtn');
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    function updateBadge(count) {
+        if (count > 0) {
+            notifBadge.textContent = count > 99 ? '99+' : count;
+            notifBadge.style.display = 'flex';
+        } else {
+            notifBadge.style.display = 'none';
+        }
+    }
+
+    function loadNotifDropdown() {
+        fetch('{{ route("notifications.dropdown") }}', { headers: { 'Accept': 'application/json' } })
+            .then(res => res.json())
+            .then(data => {
+                notifList.innerHTML = data.html;
+                updateBadge(data.unread_count);
+            })
+            .catch(() => {});
+    }
+
+    if (notifToggle) {
+        notifToggle.addEventListener('click', function (e) {
+            e.stopPropagation();
+            document.getElementById('nbMessengerPanel')?.classList.remove('show');
+            profileDropdown?.classList.remove('show');
+            notifDropdown.classList.toggle('show');
+            if (notifDropdown.classList.contains('show')) {
+                loadNotifDropdown();
+            }
+        });
+
+        notifDropdown.addEventListener('click', function (e) {
+            e.stopPropagation();
+
+            const item = e.target.closest('.ntf-item');
+            if (item && item.classList.contains('ntf-unread')) {
+                const id = item.dataset.notificationId;
+                item.classList.remove('ntf-unread');
+                item.querySelector('.ntf-dot')?.remove();
+
+                fetch(`/notifications/${id}/read`, {
+                    method: 'PATCH',
+                    headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                }).then(() => {
+                    const current = parseInt(notifBadge.textContent) || 0;
+                    if (current > 0) updateBadge(current - 1);
+                }).catch(() => {});
+            }
+        });
+
+        markAllBtn.addEventListener('click', function () {
+            fetch('{{ route("notifications.read-all") }}', {
+                method: 'PATCH',
+                headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+            }).then(() => {
+                document.querySelectorAll('.ntf-unread').forEach(el => {
+                    el.classList.remove('ntf-unread');
+                    el.querySelector('.ntf-dot')?.remove();
+                });
+                updateBadge(0);
+            }).catch(() => {});
+        });
+
+        document.addEventListener('click', function () {
+            notifDropdown.classList.remove('show');
+        });
+
+        // Initial unread count on page load, then poll every 25s
+        loadNotifDropdown();
+        setInterval(loadNotifDropdown, 25000);
+    }
     })();
+
 </script>

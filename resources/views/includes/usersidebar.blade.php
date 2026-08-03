@@ -29,6 +29,11 @@
             <span class="sb-icon"><i class="bi bi-speedometer2"></i></span>
             <span class="sb-label">{{ __('Groups') }}</span>
         </a>
+        
+        <a href="{{ url('/notifications') }}" class="sb-item">
+            <span class="sb-icon"><i class="bi bi-speedometer2"></i></span>
+            <span class="sb-label">{{ __('Notifications') }}</span>
+        </a>
 
     </div>
 </section>

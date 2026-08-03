@@ -144,6 +144,8 @@ class FriendController extends Controller
             'status'       => 'pending',
         ]);
 
+        $user->notify(new \App\Notifications\FriendRequestReceived($friendship));
+
         UserActivity::create([
             'user_id'    => $currentUserId,
             'device_id'  => null,
@@ -168,6 +170,8 @@ class FriendController extends Controller
             'status'      => 'accepted',
             'accepted_at' => now(),
         ]);
+
+        $friendship->requester->notify(new \App\Notifications\FriendRequestAccepted($friendship));
 
         UserActivity::create([
             'user_id'    => Auth::id(),

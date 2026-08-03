@@ -253,6 +253,10 @@ public function storeVideo(Request $request, Post $post)
             $current = $type;
         }
 
+        if ($current && $post->user_id !== $request->user()->id) {
+            $post->user->notify(new \App\Notifications\PostReacted($request->user(), $post, $current));
+        }
+
         $post->refresh();
 
         return response()->json([
@@ -321,6 +325,17 @@ public function storeVideo(Request $request, Post $post)
         ]);
 
         $comment->load('user');
+
+        if ($comment->parent_id) {
+            $parentComment = $comment->parent;
+            if ($parentComment && $parentComment->user_id !== $request->user()->id) {
+                $parentComment->user->notify(
+                    new \App\Notifications\CommentReplied($request->user(), $post, $comment, $parentComment)
+                );
+            }
+        } elseif ($post->user_id !== $request->user()->id) {
+            $post->user->notify(new \App\Notifications\PostCommented($request->user(), $post, $comment));
+        }
 
         return response()->json([
             'comments_count' => $post->fresh()->comments_count,
