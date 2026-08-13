@@ -138,6 +138,10 @@
                     {{ __('Join this group to post and comment.') }}
                 </div>
             @endif
+            
+            @include('groups.composer-trigger')
+            
+            @include('posts.partials.create-post-modal')
 
             @forelse ($posts as $post)
                 @include('posts.partials.post-card', ['post' => $post])

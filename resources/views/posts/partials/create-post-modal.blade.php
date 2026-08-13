@@ -1,7 +1,7 @@
 <div class="cp-overlay" id="createPostOverlay">
     <div class="cp-modal">
         <div class="cp-header">
-            <div class="cp-title">{{ __('Create post') }}</div>
+            <div class="cp-title" id="cpModalTitle">{{ __('Create post') }}</div>
             <button type="button" class="cp-close" id="createPostClose" aria-label="{{ __('Close') }}">&times;</button>
         </div>
 
@@ -28,6 +28,25 @@
                         </select>
                     </div>
                 </div>
+
+                {{-- ================= POST-TO SELECTOR (home only) ================= --}}
+                <div class="cp-postto-row" id="cpPostToRow">
+                    <button type="button" class="cp-postto-btn active" data-target="timeline" id="cpPostToTimelineBtn">
+                        {{ __('Your Timeline') }}
+                    </button>
+                    <button type="button" class="cp-postto-btn" data-target="groups" id="cpPostToGroupsBtn">
+                        {{ __('Groups') }}
+                    </button>
+                </div>
+
+                <div class="cp-group-picker" id="cpGroupPicker" style="display:none;">
+                    <div class="cp-group-picker-title">{{ __('Choose one or more groups to post to:') }}</div>
+                    <div class="cp-group-list" id="cpGroupList">
+                        <div class="cp-group-picker-loading">{{ __('Loading your groups...') }}</div>
+                    </div>
+                </div>
+
+                <div class="cp-group-locked-banner" id="cpGroupLockedBanner" style="display:none;"></div>
 
                 <textarea name="body" id="cpBody" class="cp-textarea"
                           placeholder="{{ __("What's on your mind, :name?", ['name' => auth()->user()->first_name]) }}"
@@ -185,6 +204,86 @@
         border-radius: 5px;
         padding: 3px 8px;
         font-size: 0.78rem;
+        color: var(--sb-text);
+    }
+
+    /* ---- Post-to selector ---- */
+    .cp-postto-row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+
+    .cp-postto-btn {
+        flex: 1;
+        background: var(--sb-hover);
+        border: 1px solid var(--sb-border);
+        border-radius: 8px;
+        padding: 8px 10px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--sb-text-secondary);
+    }
+
+    .cp-postto-btn.active {
+        background: var(--sb-avatar-fallback-bg);
+        color: var(--sb-avatar-fallback-text);
+        border-color: var(--sb-avatar-fallback-bg);
+    }
+
+    .cp-group-picker {
+        border: 1px solid var(--sb-border);
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 12px;
+        background: var(--sb-hover);
+    }
+
+    .cp-group-picker-title {
+        font-size: 0.8rem;
+        color: var(--sb-text-secondary);
+        margin-bottom: 8px;
+    }
+
+    .cp-group-picker-loading,
+    .cp-group-picker-empty {
+        font-size: 0.85rem;
+        color: var(--sb-text-secondary);
+    }
+
+    .cp-group-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 0;
+        font-size: 0.88rem;
+        cursor: pointer;
+    }
+
+    .cp-group-item img,
+    .cp-group-item .cp-group-item-fallback {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        object-fit: cover;
+        flex-shrink: 0;
+        background: var(--sb-avatar-fallback-bg);
+        color: var(--sb-avatar-fallback-text);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.75rem;
+    }
+
+    .cp-group-locked-banner {
+        background: var(--sb-hover);
+        border: 1px solid var(--sb-border);
+        border-radius: 8px;
+        padding: 10px 12px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-bottom: 12px;
         color: var(--sb-text);
     }
 
@@ -379,6 +478,7 @@
         const overlay = document.getElementById('createPostOverlay');
         const closeBtn = document.getElementById('createPostClose');
         const form = document.getElementById('createPostForm');
+        const modalTitle = document.getElementById('cpModalTitle');
         const textarea = document.getElementById('cpBody');
         const postBtn = document.getElementById('cpPostBtn');
         const visibilitySelect = document.getElementById('cpVisibility');
@@ -397,15 +497,122 @@
         const progressBar = document.getElementById('cpUploadProgressBar');
         const progressLabel = document.getElementById('cpUploadProgressLabel');
 
+        // ---- Post-to elements ----
+        const postToRow = document.getElementById('cpPostToRow');
+        const postToTimelineBtn = document.getElementById('cpPostToTimelineBtn');
+        const postToGroupsBtn = document.getElementById('cpPostToGroupsBtn');
+        const groupPicker = document.getElementById('cpGroupPicker');
+        const groupList = document.getElementById('cpGroupList');
+        const groupLockedBanner = document.getElementById('cpGroupLockedBanner');
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
         const MAX_IMAGES = 10;
         let selectedImages = [];
         let selectedVideo = null;
 
-        window.openCreatePostModal = function () {
+        // 'timeline' | 'groups' | 'group-locked'
+        let postToMode = 'timeline';
+        let lockedGroupId = null;
+        let lockedGroupName = null;
+        let selectedGroupIds = new Set();
+        let groupsLoaded = false;
+
+        // options: undefined/null -> home timeline mode.
+        // { groupId, groupName } -> locked to that single group (opened from a group page).
+        window.openCreatePostModal = function (options) {
+            if (options && options.groupId) {
+                lockedGroupId = options.groupId;
+                lockedGroupName = options.groupName || '';
+                postToMode = 'group-locked';
+            } else {
+                lockedGroupId = null;
+                lockedGroupName = null;
+                postToMode = 'timeline';
+                selectedGroupIds = new Set();
+            }
+
+            applyPostToModeUI();
+
             overlay.classList.add('active');
             document.body.style.overflow = 'hidden';
             setTimeout(() => textarea.focus(), 50);
         };
+
+        function applyPostToModeUI() {
+            if (postToMode === 'group-locked') {
+                postToRow.style.display = 'none';
+                groupPicker.style.display = 'none';
+                groupLockedBanner.style.display = 'block';
+                groupLockedBanner.textContent = '{{ __('Posting in') }} ' + lockedGroupName;
+                // Group posts are governed by group membership, not the
+                // friends/public visibility system, so hide that entirely.
+                visibilitySelect.style.display = 'none';
+                excludePicker.classList.remove('active');
+            } else {
+                postToRow.style.display = 'flex';
+                groupLockedBanner.style.display = 'none';
+                visibilitySelect.style.display = '';
+                setPostToTab('timeline');
+            }
+        }
+
+        function setPostToTab(tab) {
+            postToMode = tab;
+            postToTimelineBtn.classList.toggle('active', tab === 'timeline');
+            postToGroupsBtn.classList.toggle('active', tab === 'groups');
+            groupPicker.style.display = tab === 'groups' ? 'block' : 'none';
+
+            if (tab === 'groups') {
+                visibilitySelect.style.display = 'none';
+                excludePicker.classList.remove('active');
+                if (!groupsLoaded) loadPostableGroups();
+            } else {
+                visibilitySelect.style.display = '';
+            }
+
+            updatePostButtonState();
+        }
+
+        postToTimelineBtn.addEventListener('click', () => setPostToTab('timeline'));
+        postToGroupsBtn.addEventListener('click', () => setPostToTab('groups'));
+
+        function loadPostableGroups() {
+            fetch('{{ route('groups.postable') }}', { headers: { 'Accept': 'application/json' } })
+                .then(res => res.json())
+                .then(data => {
+                    groupsLoaded = true;
+                    const groups = data.groups || [];
+
+                    if (!groups.length) {
+                        groupList.innerHTML = `<div class="cp-group-picker-empty">{{ __("You don't belong to any groups you can post in yet.") }}</div>`;
+                        return;
+                    }
+
+                    groupList.innerHTML = groups.map(g => `
+                        <label class="cp-group-item">
+                            <input type="checkbox" class="cp-group-checkbox" value="${g.id}">
+                            ${g.cover_photo
+                                ? `<img src="${g.cover_photo}" alt="">`
+                                : `<span class="cp-group-item-fallback">${(g.name || '?').charAt(0).toUpperCase()}</span>`}
+                            <span>${g.name}</span>
+                        </label>
+                    `).join('');
+
+                    groupList.querySelectorAll('.cp-group-checkbox').forEach(cb => {
+                        cb.addEventListener('change', function () {
+                            if (this.checked) {
+                                selectedGroupIds.add(this.value);
+                            } else {
+                                selectedGroupIds.delete(this.value);
+                            }
+                            updatePostButtonState();
+                        });
+                    });
+                })
+                .catch(() => {
+                    groupList.innerHTML = `<div class="cp-group-picker-empty">{{ __('Could not load your groups. Try again.') }}</div>`;
+                });
+        }
 
         function closeModal() {
             overlay.classList.remove('active');
@@ -416,13 +623,15 @@
             const hasText = textarea.value.trim().length > 0;
             const hasImages = selectedImages.length > 0;
             const hasVideo = !!selectedVideo;
-            postBtn.disabled = !(hasText || hasImages || hasVideo);
+            const hasContent = hasText || hasImages || hasVideo;
+
+            if (postToMode === 'groups') {
+                postBtn.disabled = !(hasContent && selectedGroupIds.size > 0);
+            } else {
+                postBtn.disabled = !hasContent;
+            }
         }
 
-        // Images and video are mutually exclusive for now (like most
-        // platforms) — picking one disables the other icon. This keeps
-        // the upload flow simple; can be revisited later if mixed
-        // image+video posts are ever wanted.
         function syncAttachIconAvailability() {
             imageIconLabel.classList.toggle('cp-icon-disabled', !!selectedVideo);
             videoIconLabel.classList.toggle('cp-icon-disabled', selectedImages.length > 0);
@@ -489,6 +698,8 @@
             syncAttachIconAvailability();
             progressWrap.style.display = 'none';
             progressBar.style.width = '0%';
+            selectedGroupIds = new Set();
+            groupList.querySelectorAll('.cp-group-checkbox').forEach(cb => cb.checked = false);
             postBtn.disabled = true;
         }
 
@@ -536,12 +747,9 @@
             bodyError.style.display = 'none';
         });
 
-        // Wraps XHR in a promise so we can track upload progress,
-        // which fetch() does not expose.
         function uploadVideoWithProgress(postId, videoFile) {
             return new Promise((resolve, reject) => {
                 const xhr = new XMLHttpRequest();
-                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
                 const videoFormData = new FormData();
                 videoFormData.append('video', videoFile);
@@ -575,86 +783,101 @@
             });
         }
 
-        // ---- AJAX submit: no page reload ----
+        // Creates ONE post via the existing endpoint, optionally scoped to a
+        // single group_id. Returns the parsed JSON on success.
+        function createSinglePost(groupId) {
+            const formData = new FormData(form);
+            formData.delete('images[]');
+            formData.delete('video');
+            selectedImages.forEach(file => formData.append('images[]', file));
+
+            if (groupId) {
+                formData.set('group_id', groupId);
+                formData.set('visibility', 'public');
+                formData.delete('excluded_user_ids[]');
+            }
+
+            return fetch(form.action, {
+                method: 'POST',
+                headers: { 'Accept': 'application/json' },
+                body: formData,
+            }).then(async (response) => {
+                const data = await response.json();
+                if (!response.ok) {
+                    const err = new Error(data.message || 'Request failed');
+                    err.data = data;
+                    err.status = response.status;
+                    throw err;
+                }
+                return data;
+            });
+        }
+
+        async function attachVideoIfAny(postData) {
+            if (!selectedVideo || !postData.id) return postData;
+
+            postBtn.textContent = '{{ __('Uploading video...') }}';
+            progressWrap.style.display = 'block';
+            await uploadVideoWithProgress(postData.id, selectedVideo);
+            return postData;
+        }
+
         form.addEventListener('submit', function (e) {
             e.preventDefault();
 
-            if (!textarea.value.trim() && selectedImages.length === 0 && !selectedVideo) return;
+            const hasText = textarea.value.trim().length > 0;
+            if (!hasText && selectedImages.length === 0 && !selectedVideo) return;
+            if (postToMode === 'groups' && selectedGroupIds.size === 0) return;
 
             postBtn.disabled = true;
             const originalLabel = postBtn.textContent;
             postBtn.textContent = '{{ __('Posting...') }}';
             bodyError.style.display = 'none';
 
-            const formData = new FormData(form);
-            formData.delete('images[]');
-            formData.delete('video'); // video goes through a separate upload after the post exists
-            selectedImages.forEach(file => formData.append('images[]', file));
+            let targets;
+            if (postToMode === 'group-locked') {
+                targets = [lockedGroupId];
+            } else if (postToMode === 'groups') {
+                targets = Array.from(selectedGroupIds);
+            } else {
+                targets = [null]; // plain timeline post
+            }
 
-            fetch(form.action, {
-                method: 'POST',
-                headers: { 'Accept': 'application/json' },
-                body: formData,
-            })
-                .then(async (response) => {
-                    const data = await response.json();
+            (async () => {
+                try {
+                    let lastResult = null;
 
-                    if (response.status === 422) {
-                        const firstError = data.errors
-                            ? Object.values(data.errors)[0][0]
-                            : data.message;
-                        bodyError.textContent = firstError;
-                        bodyError.style.display = 'block';
-                        postBtn.disabled = false;
-                        postBtn.textContent = originalLabel;
-                        return null;
-                    }
+                    for (const groupId of targets) {
+                        let result = await createSinglePost(groupId);
+                        result = await attachVideoIfAny(result);
+                        lastResult = result;
 
-                    if (!response.ok) {
-                        throw new Error('Request failed');
-                    }
-
-                    return data;
-                })
-                .then((data) => {
-                    if (!data) return; // validation error already handled above
-
-                    if (!selectedVideo) {
-                        document.dispatchEvent(new CustomEvent('post:created', {
-                            detail: { html: data.html, message: data.message },
-                        }));
-                        resetForm();
-                        closeModal();
-                        return;
-                    }
-
-                    // Post created — now upload the attached video against it.
-                    postBtn.textContent = '{{ __('Uploading video...') }}';
-                    progressWrap.style.display = 'block';
-
-                    uploadVideoWithProgress(data.id, selectedVideo)
-                        .then(() => {
+                        if (result.status !== 'pending' && result.html) {
                             document.dispatchEvent(new CustomEvent('post:created', {
-                                detail: { html: data.html, message: data.message },
+                                detail: { html: result.html, message: result.message },
                             }));
-                            resetForm();
-                            closeModal();
-                        })
-                        .catch(() => {
-                            bodyError.textContent = '{{ __('Post was created, but the video failed to upload. Please try adding it again.') }}';
-                            bodyError.style.display = 'block';
-                            postBtn.disabled = false;
-                            postBtn.textContent = originalLabel;
-                            progressWrap.style.display = 'none';
-                        });
-                })
-                .catch(() => {
-                    bodyError.textContent = '{{ __('Something went wrong. Please try again.') }}';
+                        }
+                    }
+
+                    resetForm();
+                    closeModal();
+
+                    if (lastResult && lastResult.status === 'pending') {
+                        alert(lastResult.message);
+                    }
+                } catch (err) {
+                    if (err.status === 422 && err.data && err.data.errors) {
+                        bodyError.textContent = Object.values(err.data.errors)[0][0];
+                    } else {
+                        bodyError.textContent = err.message || '{{ __('Something went wrong. Please try again.') }}';
+                    }
                     bodyError.style.display = 'block';
+                } finally {
                     postBtn.disabled = false;
                     postBtn.textContent = originalLabel;
                     progressWrap.style.display = 'none';
-                });
+                }
+            })();
         });
     })();
 </script>

@@ -16,9 +16,15 @@ return new class extends Migration
             $table->text('description')->nullable();
 
             // 'public'  -> anyone can see posts and join instantly
-            // 'private' -> membership required to see posts; joining may
-            //              require admin approval later (not built yet)
+            // 'private' -> membership required to see posts;
+            //              joining can be automatic or require admin approval
             $table->enum('privacy', ['public', 'private'])->default('public');
+
+            // 'automatic' -> joining adds the user immediately
+            // 'manual'    -> joining creates a pending request for approval
+            $table->enum('join_approval', ['automatic', 'manual'])
+                ->default('automatic')
+                ->after('privacy');
 
             $table->string('cover_photo')->nullable();
 
@@ -32,6 +38,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index('privacy');
+            $table->index('join_approval');
         });
     }
 

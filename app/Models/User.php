@@ -151,13 +151,18 @@ class User extends Authenticatable
     }
 
     public function isFollowedBy(?User $other): bool
-{
-    if (!$other) {
-        return false;
+    {
+        if (!$other) {
+            return false;
+        }
+
+        return \App\Models\Follow::where('follower_id', $other->id)
+            ->where('followed_id', $this->id)
+            ->exists();
     }
 
-    return \App\Models\Follow::where('follower_id', $other->id)
-        ->where('followed_id', $this->id)
-        ->exists();
-}
+    public function groupMemberships()
+    {
+        return $this->hasMany(GroupMember::class);
+    }
 }

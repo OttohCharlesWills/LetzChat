@@ -10,6 +10,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\FollowController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\GroupPostModerationController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -111,9 +112,18 @@ Route::middleware('auth')->prefix('groups')->name('groups.')->group(function () 
     Route::get('/create', [GroupController::class, 'create'])->name('create');
     Route::post('/', [GroupController::class, 'store'])->name('store');
     Route::get('/{group}', [GroupController::class, 'show'])->name('show');
-    Route::post('/{group}/join', [GroupController::class, 'join'])->name('join');
+    // Route::post('/{group}/join', [GroupController::class, 'join'])->name('join');
     Route::post('/{group}/leave', [GroupController::class, 'leave'])->name('leave');
     Route::post('/{group}/cover', [GroupController::class, 'updateCoverPhoto'])->name('cover.update');
+});
+
+Route::middleware('auth')->prefix('groups/{group}')->name('groups.')->group(function () {
+    Route::get('/settings', [GroupController::class, 'settings'])->name('settings');
+    Route::patch('/settings', [GroupController::class, 'updateSettings'])->name('settings.update');
+
+    Route::get('/join-requests', [GroupController::class, 'joinRequests'])->name('join-requests.index');
+    Route::patch('/join-requests/{joinRequest}/approve', [GroupController::class, 'approveJoinRequest'])->name('join-requests.approve');
+    Route::delete('/join-requests/{joinRequest}/reject', [GroupController::class, 'rejectJoinRequest'])->name('join-requests.reject');
 });
 
 
@@ -125,6 +135,18 @@ Route::middleware('auth')->group(function () {
     Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
     Route::patch('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
 });
+
+
+
+// GROUP MODERATION ROUTES
+Route::middleware('auth')->prefix('groups/{group}')->name('groups.')->group(function () {
+    Route::get('/pending-posts', [GroupPostModerationController::class, 'index'])->name('pending-posts.index');
+    Route::patch('/pending-posts/{post}/approve', [GroupPostModerationController::class, 'approve'])->name('pending-posts.approve');
+    Route::delete('/pending-posts/{post}/reject', [GroupPostModerationController::class, 'reject'])->name('pending-posts.reject');
+});
+
+Route::get('/my-groups/postable', [GroupController::class, 'postable'])->name('groups.postable');
+
 
 
 // IMPORTANT: this must be the very LAST route in the file.

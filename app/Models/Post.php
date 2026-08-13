@@ -182,6 +182,21 @@ class Post extends Model
             return $this->videos()->where('type', 'reel');
         }
 
+        public function scopePublished($query)
+        {
+            return $query->where('status', 'published');
+        }
+
+        public function scopePendingIn($query, int $groupId)
+        {
+            return $query->where('group_id', $groupId)->where('status', 'pending');
+        }
+
+        public function group()
+{
+    return $this->belongsTo(Group::class);
+}
+
     /**
      * Scope: only posts the given (authenticated) viewer is allowed to see.
      *

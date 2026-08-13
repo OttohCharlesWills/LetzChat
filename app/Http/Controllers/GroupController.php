@@ -122,18 +122,6 @@ class GroupController extends Controller
         ]);
     }
 
-    public function join(Request $request, Group $group)
-    {
-        GroupMember::firstOrCreate([
-            'group_id' => $group->id,
-            'user_id'  => $request->user()->id,
-        ], [
-            'role' => 'member',
-        ]);
-
-        return back()->with('status', __('Joined :name.', ['name' => $group->name]));
-    }
-
     public function leave(Request $request, Group $group)
     {
         $membership = $group->members()->where('user_id', $request->user()->id)->first();
@@ -150,4 +138,84 @@ class GroupController extends Controller
 
         return back()->with('status', __('You left :name.', ['name' => $group->name]));
     }
+
+    public function postable(Request $request)
+    {
+        $groups = $request->user()->groups()
+            ->filter(fn ($group) => $group->allowsPostingBy($request->user()))
+            ->map(fn ($group) => [
+                'id' => $group->id,
+                'name' => $group->name,
+                'cover_photo' => $group->cover_photo,
+            ])
+            ->values();
+
+        return response()->json(['groups' => $groups]);
+    }
+
+    public function joinRequests(Request $request, Group $group)
+{
+    abort_unless($group->isAdminOrModerator($request->user()), 403);
+
+    $requests = $group->joinRequests()
+        ->where('status', 'pending')
+        ->with('user')
+        ->orderBy('created_at')
+        ->get();
+
+    return view('groups.join-requests', compact('group', 'requests'));
+}
+
+public function approveJoinRequest(Request $request, Group $group, \App\Models\GroupJoinRequest $joinRequest)
+{
+    abort_unless($group->isAdminOrModerator($request->user()), 403);
+    abort_unless($joinRequest->group_id === $group->id, 404);
+
+    GroupMember::firstOrCreate([
+        'group_id' => $group->id,
+        'user_id'  => $joinRequest->user_id,
+    ], ['role' => 'member']);
+
+    $joinRequest->update(['status' => 'approved']);
+
+    return response()->json(['message' => __('Request approved.')]);
+}
+
+public function rejectJoinRequest(Request $request, Group $group, \App\Models\GroupJoinRequest $joinRequest)
+{
+    abort_unless($group->isAdminOrModerator($request->user()), 403);
+    abort_unless($joinRequest->group_id === $group->id, 404);
+
+    $joinRequest->update(['status' => 'rejected']);
+
+    return response()->json(['message' => __('Request rejected.')]);
+}
+
+public function settings(Request $request, Group $group)
+{
+    $isAdmin = $group->isAdmin($request->user());
+
+    abort_unless($isAdmin, 403);
+
+    return view('groups.settings', compact('group', 'isAdmin'));
+}
+
+public function updateSettings(Request $request, Group $group)
+{
+    abort_unless($group->isAdmin($request->user()), 403);
+
+    $validated = $request->validate([
+        'post_permission' => ['required', 'in:everyone,admin_only'],
+        'require_post_approval' => ['nullable', 'boolean'],
+        'join_approval' => ['required', 'in:automatic,manual'],
+    ]);
+
+    $group->update([
+        'post_permission' => $validated['post_permission'],
+        'require_post_approval' => $request->boolean('require_post_approval'),
+        'join_approval' => $validated['join_approval'],
+    ]);
+
+    return back()->with('status', __('Group settings updated.'));
+}
 }

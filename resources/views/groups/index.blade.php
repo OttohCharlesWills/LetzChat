@@ -133,6 +133,7 @@
                             <div class="gr-activity-source">
                                 <a href="{{ route('groups.show', $post->group->uuid) }}">{{ $post->group->name }}</a>
                             </div>
+                            
                             @include('posts.partials.post-card', ['post' => $post])
                         @endforeach
 

@@ -29,12 +29,12 @@
             <span>Badge Requests</span>
         </a>
 
-        <a href="#" class="gp-side-item">
+        <a href="{{ route('groups.settings', $group) }}" class="gp-side-item">
             <i class="bi bi-question-circle-fill"></i>
-            <span>Membership Questions</span>
+            <span>Settings</span>
         </a>
 
-        <a href="#" class="gp-side-item">
+        <a href="{{ route('groups.pending-posts.index', $group) }}" class="gp-side-item">
             <i class="bi bi-file-earmark-post-fill"></i>
             <span>Pending Posts</span>
         </a>

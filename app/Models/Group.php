@@ -90,4 +90,52 @@ class Group extends Model
 
         return $this->members()->where('user_id', $user->id)->value('role');
     }
+
+    public function memberRoleFor(?User $user): ?string
+{
+    if (! $user) {
+        return null;
+    }
+
+    return $this->members()->where('user_id', $user->id)->value('role');
+}
+
+public function isAdminOrModerator(?User $user): bool
+{
+    return in_array($this->memberRoleFor($user), ['admin', 'moderator'], true);
+}
+
+public function allowsPostingBy(?User $user): bool
+{
+    $role = $this->memberRoleFor($user);
+
+    if (! $role) {
+        return false; // not a member
+    }
+
+    if ($this->post_permission === 'admin_only') {
+        return in_array($role, ['admin', 'moderator'], true);
+    }
+
+    return true; // 'everyone' + is a member
+}
+
+public function requiresApprovalFor(User $user): bool
+{
+    if ($this->isAdminOrModerator($user)) {
+        return false;
+    }
+
+    return $this->post_permission === 'everyone' && $this->require_post_approval;
+}
+
+public function joinRequests()
+{
+    return $this->hasMany(GroupJoinRequest::class);
+}
+
+public function requiresJoinApproval(): bool
+{
+    return $this->join_approval === 'manual';
+}
 }

@@ -16,24 +16,6 @@ class PostController extends Controller
         $this->middleware('auth');
     }
 
-    /**
-     * Show the feed: composer + posts visible to the logged-in user.
-     */
-    // public function index(Request $request)
-    // {
-    //     $viewer = $request->user();
-
-    //     $posts = Post::with(['user', 'images'])
-    //         ->visibleTo($viewer)
-    //         ->orderByDesc('is_pinned')
-    //         ->orderByDesc('created_at')
-    //         ->paginate(10);
-
-    //     // Needed for the "custom" visibility exclusion picker in the composer.
-    //     $friends = $viewer->friends();
-
-    //     return view('posts.index', compact('posts', 'friends'));
-    // }
 
     public function index(Request $request)
 {
@@ -87,40 +69,59 @@ class PostController extends Controller
     return view('posts.index', compact('posts', 'friends'));
 }
 
-    /**
-     * Create a new (text-only, for now) post.
-     */
-    // public function store(Request $request)
-    // {
-    //     $validated = $request->validate([
-    //         'body' => ['required', 'string', 'max:5000'],
-    //         'visibility' => ['required', 'in:public,friends,custom,private'],
-    //         'excluded_user_ids' => ['nullable', 'array'],
-    //         'excluded_user_ids.*' => ['exists:users,id'],
-    //     ]);
+//     public function store(Request $request)
+// {
+//     $validated = $request->validate([
+//         'body' => ['nullable', 'string', 'max:5000'],
+//         'visibility' => ['required', 'in:public,friends,custom,private'],
+//         'excluded_user_ids' => ['nullable', 'array'],
+//         'excluded_user_ids.*' => ['exists:users,id'],
+//         'images' => ['nullable', 'array', 'max:10'],
+//         'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:8192'],
+//     ]);
 
-    //     $post = $request->user()->posts()->create([
-    //         'body' => $validated['body'],
-    //         'visibility' => $validated['visibility'],
-    //     ]);
+//     // A post needs at least a body or at least one image
+//     if (empty($validated['body']) && ! $request->hasFile('images')) {
+//         return response()->json([
+//             'message' => __('A post needs either text or at least one image.'),
+//         ], 422);
+//     }
 
-    //     if ($validated['visibility'] === 'custom' && ! empty($validated['excluded_user_ids'])) {
-    //         $post->excludedUsers()->sync($validated['excluded_user_ids']);
-    //     }
+//     $post = $request->user()->posts()->create([
+//         'body' => $validated['body'] ?? null,
+//         'visibility' => $validated['visibility'],
+//     ]);
 
-    //     $post->load('user');
+//     if ($request->hasFile('images')) {
+//         foreach ($request->file('images') as $index => $file) {
+//             $path = $file->store('posts', 'cloudinary');
+//             $url = Storage::disk('cloudinary')->url($path);
 
-    //     if ($request->wantsJson()) {
-    //         return response()->json([
-    //             'message' => __('Your post has been shared.'),
-    //             'html' => view('posts.partials.post-card', ['post' => $post])->render(),
-    //         ]);
-    //     }
+//             $post->images()->create([
+//                 'url' => $url,
+//                 'public_id' => $path,
+//                 'position' => $index,
+//             ]);
+//         }
+//     }
 
-    //     return back()->with('status', __('Your post has been shared.'));
-    // }
+//     if ($validated['visibility'] === 'custom' && ! empty($validated['excluded_user_ids'])) {
+//         $post->excludedUsers()->sync($validated['excluded_user_ids']);
+//     }
 
-    public function store(Request $request)
+//     $post->load(['user', 'images']);
+
+//     if ($request->wantsJson()) {
+//         return response()->json([
+//             'message' => __('Your post has been shared.'),
+//             'html' => view('posts.partials.post-card', ['post' => $post])->render(),
+//             'id' => $post->uuid,   // <-- add this line
+//         ]);
+//     }
+
+//     return back()->with('status', __('Your post has been shared.'));
+// }
+public function store(Request $request)
 {
     $validated = $request->validate([
         'body' => ['nullable', 'string', 'max:5000'],
@@ -129,18 +130,40 @@ class PostController extends Controller
         'excluded_user_ids.*' => ['exists:users,id'],
         'images' => ['nullable', 'array', 'max:10'],
         'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:8192'],
+        'group_id' => ['nullable', 'exists:groups,id'],
     ]);
 
-    // A post needs at least a body or at least one image
     if (empty($validated['body']) && ! $request->hasFile('images')) {
         return response()->json([
             'message' => __('A post needs either text or at least one image.'),
         ], 422);
     }
 
+    $status = 'published';
+
+    if (! empty($validated['group_id'])) {
+        $group = \App\Models\Group::findOrFail($validated['group_id']);
+
+        if (! $group->allowsPostingBy($request->user())) {
+            return response()->json([
+                'message' => __('You do not have permission to post in this group.'),
+            ], 403);
+        }
+
+        if ($group->requiresApprovalFor($request->user())) {
+            $status = 'pending';
+        }
+
+        // Group posts are governed by group membership, not the
+        // friends/public visibility system — force it regardless of input.
+        $validated['visibility'] = 'public';
+    }
+
     $post = $request->user()->posts()->create([
         'body' => $validated['body'] ?? null,
         'visibility' => $validated['visibility'],
+        'group_id' => $validated['group_id'] ?? null,
+        'status' => $status,
     ]);
 
     if ($request->hasFile('images')) {
@@ -164,14 +187,23 @@ class PostController extends Controller
 
     if ($request->wantsJson()) {
         return response()->json([
-            'message' => __('Your post has been shared.'),
-            'html' => view('posts.partials.post-card', ['post' => $post])->render(),
-            'id' => $post->uuid,   // <-- add this line
+            'message' => $status === 'pending'
+                ? __('Your post was submitted and is awaiting admin approval.')
+                : __('Your post has been shared.'),
+            'html' => $status === 'published'
+                ? view('posts.partials.post-card', ['post' => $post])->render()
+                : null,
+            'id' => $post->uuid,
+            'status' => $status,
         ]);
     }
 
-    return back()->with('status', __('Your post has been shared.'));
+    return back()->with('status', $status === 'pending'
+        ? __('Your post was submitted and is awaiting admin approval.')
+        : __('Your post has been shared.'));
 }
+
+
 
 public function storeVideo(Request $request, Post $post)
 {
