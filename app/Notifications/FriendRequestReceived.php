@@ -25,7 +25,7 @@ class FriendRequestReceived extends Notification
             'actor_name' => $requester->first_name.' '.$requester->last_name,
             'actor_photo' => $requester->profile_photo,
             'actor_uuid' => $requester->uuid,
-            'message' => "{$requester->first_name} sent you a friend request",
+            'message' => $requester->first_name . ' ' . $requester->last_name . ' sent you a friend request',
         ];
     }
 }
