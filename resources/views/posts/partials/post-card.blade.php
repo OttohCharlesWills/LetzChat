@@ -1,7 +1,7 @@
 @php
     $myReaction = $post->isReactedToBy(auth()->user());
     $reactionMeta = [
-        'like'  => ['emoji' => '👍', 'label' => __('Like'),  'color' => '#e85d3f'],
+        'like'  => ['emoji' => '👍', 'label' => __('Like'),  'color' => '#0d6efd'],
         'love'  => ['emoji' => '❤️', 'label' => __('Love'),  'color' => '#e0245e'],
         'haha'  => ['emoji' => '😆', 'label' => __('Haha'),  'color' => '#f7b125'],
         'wow'   => ['emoji' => '😮', 'label' => __('Wow'),   'color' => '#f7b125'],
@@ -199,7 +199,7 @@
             --pc-border: #e4e6eb;
             --pc-text: #050505;
             --pc-text-secondary: #65676b;
-            --pc-avatar-fallback-bg: #e85d3f;
+            --pc-avatar-fallback-bg: #0d6efd;
             --pc-avatar-fallback-text: #ffffff;
             --pc-hover: #f0f2f5;
         }
@@ -209,7 +209,7 @@
             --pc-border: #3e4042;
             --pc-text: #e4e6eb;
             --pc-text-secondary: #b0b3b8;
-            --pc-avatar-fallback-bg: #e85d3f;
+            --pc-avatar-fallback-bg: #4599ff;
             --pc-avatar-fallback-text: #050505;
             --pc-hover: #3a3b3c;
         }
@@ -236,6 +236,7 @@
             display: block;
         }
 
+        /* 1 image: full width, natural-ish height */
         .pc-images-count-1 {
             grid-template-columns: 1fr;
         }
@@ -247,6 +248,7 @@
             object-fit: contain;
         }
 
+        /* 2 images: side by side */
         .pc-images-count-2 {
             grid-template-columns: 1fr 1fr;
         }
@@ -254,6 +256,7 @@
             aspect-ratio: 1;
         }
 
+        /* 3 images: one big left, two stacked right */
         .pc-images-count-3 {
             grid-template-columns: 2fr 1fr;
             grid-template-rows: 1fr 1fr;
@@ -265,6 +268,7 @@
             aspect-ratio: 1;
         }
 
+        /* 4 images: 2x2 grid */
         .pc-images-count-4 {
             grid-template-columns: 1fr 1fr;
             grid-template-rows: 1fr 1fr;
@@ -273,6 +277,7 @@
             aspect-ratio: 1;
         }
 
+        /* 5 images: 2 on top, 3 on bottom (last shows +N overlay if more) */
         .pc-images-count-5 {
             grid-template-columns: repeat(3, 1fr);
         }
@@ -296,6 +301,7 @@
             justify-content: center;
         }
 
+        /* ---- Videos ---- */
         .pc-videos {
             margin-top: 10px;
             display: flex;
@@ -311,6 +317,7 @@
             display: block;
         }
 
+        /* ---- Lightbox ---- */
         .pc-lightbox-overlay {
             display: none;
             position: fixed;
@@ -409,8 +416,8 @@
 
         .pc-follow-btn {
             background: none;
-            border: 1px solid #e85d3f;
-            color: #e85d3f !important;
+            border: 1px solid #0d6efd;
+            color: #0d6efd !important;
             border-radius: 14px;
             padding: 2px 10px;
             font-size: 0.75rem;
@@ -419,7 +426,7 @@
         }
 
         .pc-follow-btn:hover {
-            background: #e85d3f;
+            background: #0d6efd;
             color: #fff !important;
         }
 
@@ -453,6 +460,7 @@
             color: var(--pc-text);
         }
 
+        /* ---- Options menu (three dots) ---- */
         .pc-options-wrap {
             position: relative;
             flex-shrink: 0;
@@ -516,6 +524,7 @@
             color: #dc3545;
         }
 
+        /* ---- Reaction cluster (badges + tooltip) ---- */
         .pc-reaction-cluster {
             position: relative;
             display: flex;
@@ -584,12 +593,13 @@
             color: var(--pc-text);
         }
 
+        /* ---- Reaction picker ---- */
         .pc-reaction-wrap {
             position: relative;
         }
 
         .pc-like-btn.is-active .pc-like-emoji {
-            color: var(--pc-reaction-color, #e85d3f);
+            color: var(--pc-reaction-color, #0d6efd);
         }
 
         .pc-reaction-picker {
@@ -626,6 +636,7 @@
             background: var(--pc-hover);
         }
 
+        /* ---- Comments section ---- */
         .pc-comments-section {
             margin-top: 12px;
             border-top: 1px solid var(--pc-border);
@@ -683,7 +694,7 @@
         .cm-reply-send-btn {
             background: none;
             border: none;
-            color: #e85d3f;
+            color: #0d6efd;
             font-size: 1.05rem;
             flex-shrink: 0;
             display: flex;
@@ -706,6 +717,7 @@
             flex: 1;
         }
 
+        /* ---- Share box ---- */
         .pc-share-section {
             margin-top: 12px;
             border-top: 1px solid var(--pc-border);
@@ -734,6 +746,7 @@
             margin-top: 8px;
         }
 
+        /* ---- Comment items (shared with posts.partials.comment) ---- */
         .cm-item {
             display: flex;
             gap: 8px;
@@ -816,7 +829,7 @@
         }
 
         .cm-like-btn.liked {
-            color: #e85d3f;
+            color: #0d6efd;
         }
 
         .cm-delete-btn:hover {
@@ -853,385 +866,370 @@
     </style>
 
     <script>
-        // ============================================================
-        // GUARD: Turbo (hotwired/turbo) keeps the JS runtime alive across
-        // page navigations and re-executes inline <script> tags on every
-        // page render instead of doing a full reload. Laravel's @once
-        // only prevents duplication within a single server response — it
-        // does NOT stop this script from running again after a Turbo
-        // navigation. Without this guard, every navigation stacks another
-        // set of these document-level listeners, causing things like
-        // posts appearing multiple times when 'post:created' fires and
-        // duplicate handling of clicks/reactions/comments.
-        // ============================================================
-        if (!window.__pcPostCardScriptLoaded) {
-            window.__pcPostCardScriptLoaded = true;
+        // ---- Image lightbox ----
+        const lightbox = document.getElementById('pcLightboxOverlay');
+        const lightboxImg = document.getElementById('pcLightboxImg');
+        const lightboxClose = document.getElementById('pcLightboxClose');
 
-            // ---- Image lightbox ----
-            const lightbox = document.getElementById('pcLightboxOverlay');
-            const lightboxImg = document.getElementById('pcLightboxImg');
-            const lightboxClose = document.getElementById('pcLightboxClose');
+        document.addEventListener('click', function (e) {
+        const item = e.target.closest('.pc-image-item');
+        if (item) {
+            lightboxImg.src = item.dataset.full;
+            lightbox.classList.add('active');
+        }
+        });
+
+        lightboxClose.addEventListener('click', () => lightbox.classList.remove('active'));
+        lightbox.addEventListener('click', function (e) {
+        if (e.target === lightbox) lightbox.classList.remove('active');
+        });
+        document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') lightbox.classList.remove('active');
+        });
+
+        (function () {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+            const REACTIONS = {
+                like:  { emoji: '👍', label: '{{ __('Like') }}',  color: '#0d6efd' },
+                love:  { emoji: '❤️', label: '{{ __('Love') }}',  color: '#e0245e' },
+                haha:  { emoji: '😆', label: '{{ __('Haha') }}',  color: '#f7b125' },
+                wow:   { emoji: '😮', label: '{{ __('Wow') }}',   color: '#f7b125' },
+                sad:   { emoji: '😢', label: '{{ __('Sad') }}',   color: '#f7b125' },
+                angry: { emoji: '😡', label: '{{ __('Angry') }}', color: '#e0245e' },
+            };
+
+            function jsonFetch(url, options = {}) {
+                return fetch(url, {
+                    ...options,
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        ...options.headers,
+                    },
+                }).then(async (res) => {
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok) {
+                        console.error('Request failed:', url, res.status, data);
+                        throw new Error(data.message || 'Request failed');
+                    }
+                    return data;
+                });
+            }
+
+            function applyReactionUI(likeBtn, type) {
+                if (type) {
+                    const meta = REACTIONS[type] || REACTIONS.like;
+                    likeBtn.classList.add('is-active');
+                    likeBtn.style.setProperty('--pc-reaction-color', meta.color);
+                } else {
+                    likeBtn.classList.remove('is-active');
+                    likeBtn.style.removeProperty('--pc-reaction-color');
+                }
+            }
+
+            function sendReaction(card, type) {
+                const uuid = card.dataset.postId;
+                const likeBtn = card.querySelector('.pc-like-btn');
+                const countEl = card.querySelector('.pc-stats-count');
+
+                jsonFetch(`/posts/${uuid}/react`, {
+                    method: 'POST',
+                    body: JSON.stringify(type ? { type } : {}),
+                }).then((data) => {
+                    applyReactionUI(likeBtn, data.current_reaction);
+                    countEl.textContent = data.likes_count;
+                }).catch(() => {});
+            }
+
+            function closeAllPickers(except) {
+                document.querySelectorAll('.pc-reaction-picker.show').forEach((p) => {
+                    if (p !== except) p.classList.remove('show');
+                });
+            }
+
+            function closeAllOptionsMenus(except) {
+                document.querySelectorAll('.pc-options-dropdown.show').forEach((d) => {
+                    if (d !== except) d.classList.remove('show');
+                });
+            }
+
+            document.addEventListener('contextmenu', function (e) {
+                const likeBtn = e.target.closest('.pc-like-btn');
+                if (!likeBtn) return;
+
+                e.preventDefault();
+                const picker = likeBtn.closest('.pc-reaction-wrap').querySelector('.pc-reaction-picker');
+                closeAllPickers(picker);
+                picker.classList.toggle('show');
+            });
+
+            let pressTimer;
+            document.addEventListener('touchstart', function (e) {
+                const btn = e.target.closest('.pc-like-btn');
+                if (!btn) return;
+                const picker = btn.closest('.pc-reaction-wrap').querySelector('.pc-reaction-picker');
+                pressTimer = setTimeout(() => {
+                    closeAllPickers(picker);
+                    picker.classList.add('show');
+                }, 400);
+            });
+            document.addEventListener('touchend', function () {
+                clearTimeout(pressTimer);
+            });
+
+            const reactorsCache = new Map();
+
+            function loadReactors(postUuid) {
+                if (reactorsCache.has(postUuid)) {
+                    return Promise.resolve(reactorsCache.get(postUuid));
+                }
+                return jsonFetch(`/posts/${postUuid}/reactors`, { method: 'GET' })
+                    .then((data) => {
+                        reactorsCache.set(postUuid, data.reactors);
+                        return data.reactors;
+                    });
+            }
+
+            document.addEventListener('mouseenter', function (e) {
+                const badge = e.target.closest && e.target.closest('.pc-reaction-badge');
+                if (!badge) return;
+
+                const cluster = badge.closest('.pc-reaction-cluster');
+                const tooltip = cluster.querySelector('.pc-reaction-tooltip');
+                const type = badge.dataset.type;
+
+                tooltip.textContent = '{{ __('Loading...') }}';
+                tooltip.classList.add('show');
+
+                loadReactors(cluster.dataset.postUuid).then((reactors) => {
+                    const names = reactors.filter((r) => r.type === type).map((r) => r.name);
+                    tooltip.textContent = names.length ? names.join(', ') : '';
+                }).catch(() => {});
+            }, true);
+
+            document.addEventListener('mouseleave', function (e) {
+                const badge = e.target.closest && e.target.closest('.pc-reaction-badge');
+                if (!badge) return;
+                badge.closest('.pc-reaction-cluster').querySelector('.pc-reaction-tooltip').classList.remove('show');
+            }, true);
 
             document.addEventListener('click', function (e) {
-                const item = e.target.closest('.pc-image-item');
-                if (item) {
-                    lightboxImg.src = item.dataset.full;
-                    lightbox.classList.add('active');
-                }
-            });
-
-            lightboxClose.addEventListener('click', () => lightbox.classList.remove('active'));
-            lightbox.addEventListener('click', function (e) {
-                if (e.target === lightbox) lightbox.classList.remove('active');
-            });
-            document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape') lightbox.classList.remove('active');
-            });
-
-            (function () {
-                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
-                const REACTIONS = {
-                    like:  { emoji: '👍', label: '{{ __('Like') }}',  color: '#e85d3f' },
-                    love:  { emoji: '❤️', label: '{{ __('Love') }}',  color: '#e0245e' },
-                    haha:  { emoji: '😆', label: '{{ __('Haha') }}',  color: '#f7b125' },
-                    wow:   { emoji: '😮', label: '{{ __('Wow') }}',   color: '#f7b125' },
-                    sad:   { emoji: '😢', label: '{{ __('Sad') }}',   color: '#f7b125' },
-                    angry: { emoji: '😡', label: '{{ __('Angry') }}', color: '#e0245e' },
-                };
-
-                function jsonFetch(url, options = {}) {
-                    return fetch(url, {
-                        ...options,
-                        headers: {
-                            'X-CSRF-TOKEN': csrfToken,
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json',
-                            ...options.headers,
-                        },
-                    }).then(async (res) => {
-                        const data = await res.json().catch(() => ({}));
-                        if (!res.ok) {
-                            console.error('Request failed:', url, res.status, data);
-                            throw new Error(data.message || 'Request failed');
-                        }
-                        return data;
-                    });
+                if (!e.target.closest('.pc-reaction-picker') && !e.target.closest('.pc-like-btn')) {
+                    closeAllPickers(null);
                 }
 
-                function applyReactionUI(likeBtn, type) {
-                    if (type) {
-                        const meta = REACTIONS[type] || REACTIONS.like;
-                        likeBtn.classList.add('is-active');
-                        likeBtn.style.setProperty('--pc-reaction-color', meta.color);
-                    } else {
-                        likeBtn.classList.remove('is-active');
-                        likeBtn.style.removeProperty('--pc-reaction-color');
-                    }
+                if (!e.target.closest('.pc-options-wrap')) {
+                    closeAllOptionsMenus(null);
                 }
 
-                function sendReaction(card, type) {
+                // ---------- Options menu toggle (three dots) ----------
+                const optionsBtn = e.target.closest('.pc-options-btn');
+                if (optionsBtn) {
+                    const dropdown = optionsBtn.closest('.pc-options-wrap').querySelector('.pc-options-dropdown');
+                    closeAllOptionsMenus(dropdown);
+                    dropdown.classList.toggle('show');
+                    return;
+                }
+
+                // ---------- Toggle commenting on/off ----------
+                const toggleCommentsBtn = e.target.closest('.pc-toggle-comments-btn');
+                if (toggleCommentsBtn) {
+                    const card = toggleCommentsBtn.closest('.pc-card');
                     const uuid = card.dataset.postId;
-                    const likeBtn = card.querySelector('.pc-like-btn');
-                    const countEl = card.querySelector('.pc-stats-count');
+                    const label = toggleCommentsBtn.querySelector('.pc-toggle-comments-label');
+                    const composerForm = card.querySelector('.pc-comment-composer-form');
+                    const disabledNote = card.querySelector('.pc-comments-disabled-note');
 
-                    jsonFetch(`/posts/${uuid}/react`, {
-                        method: 'POST',
-                        body: JSON.stringify(type ? { type } : {}),
-                    }).then((data) => {
-                        applyReactionUI(likeBtn, data.current_reaction);
-                        countEl.textContent = data.likes_count;
+                    jsonFetch(`/posts/${uuid}/toggle-comments`, { method: 'PATCH' }).then((data) => {
+                        toggleCommentsBtn.dataset.commentsEnabled = data.comments_enabled ? '1' : '0';
+                        label.textContent = data.comments_enabled
+                            ? '{{ __('Turn off commenting') }}'
+                            : '{{ __('Turn on commenting') }}';
+                        composerForm.classList.toggle('d-none', !data.comments_enabled);
+                        disabledNote.classList.toggle('d-none', data.comments_enabled);
                     }).catch(() => {});
+
+                    closeAllOptionsMenus(null);
+                    return;
                 }
 
-                function closeAllPickers(except) {
-                    document.querySelectorAll('.pc-reaction-picker.show').forEach((p) => {
-                        if (p !== except) p.classList.remove('show');
-                    });
+                // ---------- Delete post ----------
+                const deleteBtn = e.target.closest('.pc-options-delete');
+                if (deleteBtn) {
+                    if (!confirm('{{ __('Delete this post? This cannot be undone.') }}')) return;
+                    const card = deleteBtn.closest('.pc-card');
+                    const uuid = card.dataset.postId;
+
+                    jsonFetch(`/posts/${uuid}`, { method: 'DELETE' }).then(() => {
+                        card.remove();
+                    }).catch(() => {});
+                    return;
                 }
 
-                function closeAllOptionsMenus(except) {
-                    document.querySelectorAll('.pc-options-dropdown.show').forEach((d) => {
-                        if (d !== except) d.classList.remove('show');
-                    });
+                const opt = e.target.closest('.pc-reaction-opt');
+                if (opt) {
+                    const card = opt.closest('.pc-card');
+                    sendReaction(card, opt.dataset.type);
+                    opt.closest('.pc-reaction-picker').classList.remove('show');
+                    return;
                 }
 
-                document.addEventListener('contextmenu', function (e) {
-                    const likeBtn = e.target.closest('.pc-like-btn');
-                    if (!likeBtn) return;
+                const likeBtn = e.target.closest('.pc-like-btn');
+                if (likeBtn) {
+                    sendReaction(likeBtn.closest('.pc-card'), null);
+                    return;
+                }
 
-                    e.preventDefault();
-                    const picker = likeBtn.closest('.pc-reaction-wrap').querySelector('.pc-reaction-picker');
-                    closeAllPickers(picker);
-                    picker.classList.toggle('show');
-                });
+                const commentToggle = e.target.closest('.pc-comment-toggle-btn');
+                if (commentToggle) {
+                    const card = commentToggle.closest('.pc-card');
+                    const section = card.querySelector('.pc-comments-section');
+                    const list = section.querySelector('.pc-comment-list');
 
-                let pressTimer;
-                document.addEventListener('touchstart', function (e) {
-                    const btn = e.target.closest('.pc-like-btn');
-                    if (!btn) return;
-                    const picker = btn.closest('.pc-reaction-wrap').querySelector('.pc-reaction-picker');
-                    pressTimer = setTimeout(() => {
-                        closeAllPickers(picker);
-                        picker.classList.add('show');
-                    }, 400);
-                });
-                document.addEventListener('touchend', function () {
-                    clearTimeout(pressTimer);
-                });
+                    section.classList.toggle('d-none');
 
-                const reactorsCache = new Map();
-
-                function loadReactors(postUuid) {
-                    if (reactorsCache.has(postUuid)) {
-                        return Promise.resolve(reactorsCache.get(postUuid));
+                    if (!section.dataset.loaded && !section.classList.contains('d-none')) {
+                        section.dataset.loaded = '1';
+                        jsonFetch(`/posts/${card.dataset.postId}/comments`, { method: 'GET' })
+                            .then((data) => { list.innerHTML = data.html; })
+                            .catch(() => {});
                     }
-                    return jsonFetch(`/posts/${postUuid}/reactors`, { method: 'GET' })
+                    return;
+                }
+
+                const cmLikeBtn = e.target.closest('.cm-like-btn');
+                if (cmLikeBtn) {
+                    const id = cmLikeBtn.dataset.commentId;
+                    jsonFetch(`/comments/${id}/react`, { method: 'POST', body: '{}' })
                         .then((data) => {
-                            reactorsCache.set(postUuid, data.reactors);
-                            return data.reactors;
-                        });
+                            cmLikeBtn.classList.toggle('liked', data.liked);
+                            cmLikeBtn.querySelector('.cm-like-count').textContent = data.likes_count;
+                        }).catch(() => {});
+                    return;
                 }
 
-                document.addEventListener('mouseenter', function (e) {
-                    const badge = e.target.closest && e.target.closest('.pc-reaction-badge');
-                    if (!badge) return;
+                const cmDeleteBtn = e.target.closest('.cm-delete-btn');
+                if (cmDeleteBtn) {
+                    if (!confirm('{{ __('Delete this comment?') }}')) return;
+                    const id = cmDeleteBtn.dataset.commentId;
+                    const item = cmDeleteBtn.closest('.cm-item');
+                    const card = cmDeleteBtn.closest('.pc-card');
 
-                    const cluster = badge.closest('.pc-reaction-cluster');
-                    const tooltip = cluster.querySelector('.pc-reaction-tooltip');
-                    const type = badge.dataset.type;
+                    jsonFetch(`/comments/${id}`, { method: 'DELETE' }).then((data) => {
+                        const bubble = item.querySelector(':scope > .cm-body-wrap > .cm-bubble');
+                        const actions = item.querySelector(':scope > .cm-body-wrap > .cm-actions');
+                        const avatarLink = item.querySelector(':scope > .cm-avatar-link');
 
-                    tooltip.textContent = '{{ __('Loading...') }}';
-                    tooltip.classList.add('show');
+                        if (bubble) bubble.outerHTML = `<div class="cm-bubble cm-deleted-bubble"><em>{{ __('This comment was deleted.') }}</em></div>`;
+                        if (actions) actions.remove();
+                        if (avatarLink) avatarLink.outerHTML = `<span class="cm-avatar cm-avatar-fallback">?</span>`;
 
-                    loadReactors(cluster.dataset.postUuid).then((reactors) => {
-                        const names = reactors.filter((r) => r.type === type).map((r) => r.name);
-                        tooltip.textContent = names.length ? names.join(', ') : '';
+                        card.querySelector('.pc-comment-count').textContent = data.comments_count;
                     }).catch(() => {});
-                }, true);
+                    return;
+                }
 
-                document.addEventListener('mouseleave', function (e) {
-                    const badge = e.target.closest && e.target.closest('.pc-reaction-badge');
-                    if (!badge) return;
-                    badge.closest('.pc-reaction-cluster').querySelector('.pc-reaction-tooltip').classList.remove('show');
-                }, true);
-
-                document.addEventListener('click', function (e) {
-                    if (!e.target.closest('.pc-reaction-picker') && !e.target.closest('.pc-like-btn')) {
-                        closeAllPickers(null);
+                const replyBtn = e.target.closest('.cm-reply-btn');
+                if (replyBtn) {
+                    const id = replyBtn.dataset.commentId;
+                    const form = document.getElementById(`cmReplyForm${id}`);
+                    if (!form) return;
+                    form.classList.toggle('d-none');
+                    if (!form.classList.contains('d-none')) {
+                        const input = form.querySelector('.cm-reply-input');
+                        input.placeholder = `{{ __('Reply to') }} ${replyBtn.dataset.authorName}...`;
+                        input.focus();
                     }
+                    return;
+                }
 
-                    if (!e.target.closest('.pc-options-wrap')) {
-                        closeAllOptionsMenus(null);
+                const shareBtn = e.target.closest('.pc-share-btn');
+                if (shareBtn) {
+                    const card = shareBtn.closest('.pc-card');
+                    const section = card.querySelector('.pc-share-section');
+                    section.classList.toggle('d-none');
+                    if (!section.classList.contains('d-none')) {
+                        section.querySelector('.pc-share-input').focus();
                     }
+                    return;
+                }
 
-                    // ---------- Options menu toggle (three dots) ----------
-                    const optionsBtn = e.target.closest('.pc-options-btn');
-                    if (optionsBtn) {
-                        const dropdown = optionsBtn.closest('.pc-options-wrap').querySelector('.pc-options-dropdown');
-                        closeAllOptionsMenus(dropdown);
-                        dropdown.classList.toggle('show');
-                        return;
-                    }
+                const shareCancel = e.target.closest('.pc-share-cancel');
+                if (shareCancel) {
+                    const section = shareCancel.closest('.pc-share-section');
+                    section.classList.add('d-none');
+                    section.querySelector('.pc-share-input').value = '';
+                    return;
+                }
+            });
 
-                    // ---------- Toggle commenting on/off ----------
-                    const toggleCommentsBtn = e.target.closest('.pc-toggle-comments-btn');
-                    if (toggleCommentsBtn) {
-                        const card = toggleCommentsBtn.closest('.pc-card');
-                        const uuid = card.dataset.postId;
-                        const label = toggleCommentsBtn.querySelector('.pc-toggle-comments-label');
-                        const composerForm = card.querySelector('.pc-comment-composer-form');
-                        const disabledNote = card.querySelector('.pc-comments-disabled-note');
+            document.addEventListener('submit', function (e) {
+                const commentForm = e.target.closest('.pc-comment-composer-form');
+                if (commentForm) {
+                    e.preventDefault();
+                    const input = commentForm.querySelector('.pc-comment-composer-input');
+                    const body = input.value.trim();
+                    if (!body) return;
+                    const card = commentForm.closest('.pc-card');
 
-                        jsonFetch(`/posts/${uuid}/toggle-comments`, { method: 'PATCH' }).then((data) => {
-                            toggleCommentsBtn.dataset.commentsEnabled = data.comments_enabled ? '1' : '0';
-                            label.textContent = data.comments_enabled
-                                ? '{{ __('Turn off commenting') }}'
-                                : '{{ __('Turn on commenting') }}';
-                            composerForm.classList.toggle('d-none', !data.comments_enabled);
-                            disabledNote.classList.toggle('d-none', data.comments_enabled);
-                        }).catch(() => {});
+                    jsonFetch(`/posts/${card.dataset.postId}/comments`, {
+                        method: 'POST',
+                        body: JSON.stringify({ body }),
+                    }).then((data) => {
+                        input.value = '';
+                        card.querySelector('.pc-comment-list').insertAdjacentHTML('beforeend', data.html);
+                        card.querySelector('.pc-comment-count').textContent = data.comments_count;
+                    }).catch(() => {});
+                    return;
+                }
 
-                        closeAllOptionsMenus(null);
-                        return;
-                    }
+                const replyForm = e.target.closest('.cm-reply-form');
+                if (replyForm) {
+                    e.preventDefault();
+                    const input = replyForm.querySelector('.cm-reply-input');
+                    const body = input.value.trim();
+                    if (!body) return;
 
-                    // ---------- Delete post ----------
-                    const deleteBtn = e.target.closest('.pc-options-delete');
-                    if (deleteBtn) {
-                        if (!confirm('{{ __('Delete this post? This cannot be undone.') }}')) return;
-                        const card = deleteBtn.closest('.pc-card');
-                        const uuid = card.dataset.postId;
+                    const postUuid = replyForm.dataset.postUuid;
+                    const parentId = replyForm.dataset.parentId;
+                    const card = replyForm.closest('.pc-card');
 
-                        jsonFetch(`/posts/${uuid}`, { method: 'DELETE' }).then(() => {
-                            card.remove();
-                        }).catch(() => {});
-                        return;
-                    }
+                    jsonFetch(`/posts/${postUuid}/comments`, {
+                        method: 'POST',
+                        body: JSON.stringify({ body, parent_id: parentId }),
+                    }).then((data) => {
+                        input.value = '';
+                        replyForm.classList.add('d-none');
+                        document.getElementById(`cmReplies${parentId}`)
+                            .insertAdjacentHTML('beforeend', data.html);
+                        card.querySelector('.pc-comment-count').textContent = data.comments_count;
+                    }).catch(() => {});
+                    return;
+                }
 
-                    const opt = e.target.closest('.pc-reaction-opt');
-                    if (opt) {
-                        const card = opt.closest('.pc-card');
-                        sendReaction(card, opt.dataset.type);
-                        opt.closest('.pc-reaction-picker').classList.remove('show');
-                        return;
-                    }
+                const shareForm = e.target.closest('.pc-share-form');
+                if (shareForm) {
+                    e.preventDefault();
+                    const textarea = shareForm.querySelector('.pc-share-input');
+                    const caption = textarea.value.trim();
+                    const card = shareForm.closest('.pc-card');
+                    const section = shareForm.closest('.pc-share-section');
 
-                    const likeBtn = e.target.closest('.pc-like-btn');
-                    if (likeBtn) {
-                        sendReaction(likeBtn.closest('.pc-card'), null);
-                        return;
-                    }
-
-                    const commentToggle = e.target.closest('.pc-comment-toggle-btn');
-                    if (commentToggle) {
-                        const card = commentToggle.closest('.pc-card');
-                        const section = card.querySelector('.pc-comments-section');
-                        const list = section.querySelector('.pc-comment-list');
-
-                        section.classList.toggle('d-none');
-
-                        if (!section.dataset.loaded && !section.classList.contains('d-none')) {
-                            section.dataset.loaded = '1';
-                            jsonFetch(`/posts/${card.dataset.postId}/comments`, { method: 'GET' })
-                                .then((data) => { list.innerHTML = data.html; })
-                                .catch(() => {});
-                        }
-                        return;
-                    }
-
-                    const cmLikeBtn = e.target.closest('.cm-like-btn');
-                    if (cmLikeBtn) {
-                        const id = cmLikeBtn.dataset.commentId;
-                        jsonFetch(`/comments/${id}/react`, { method: 'POST', body: '{}' })
-                            .then((data) => {
-                                cmLikeBtn.classList.toggle('liked', data.liked);
-                                cmLikeBtn.querySelector('.cm-like-count').textContent = data.likes_count;
-                            }).catch(() => {});
-                        return;
-                    }
-
-                    const cmDeleteBtn = e.target.closest('.cm-delete-btn');
-                    if (cmDeleteBtn) {
-                        if (!confirm('{{ __('Delete this comment?') }}')) return;
-                        const id = cmDeleteBtn.dataset.commentId;
-                        const item = cmDeleteBtn.closest('.cm-item');
-                        const card = cmDeleteBtn.closest('.pc-card');
-
-                        jsonFetch(`/comments/${id}`, { method: 'DELETE' }).then((data) => {
-                            const bubble = item.querySelector(':scope > .cm-body-wrap > .cm-bubble');
-                            const actions = item.querySelector(':scope > .cm-body-wrap > .cm-actions');
-                            const avatarLink = item.querySelector(':scope > .cm-avatar-link');
-
-                            if (bubble) bubble.outerHTML = `<div class="cm-bubble cm-deleted-bubble"><em>{{ __('This comment was deleted.') }}</em></div>`;
-                            if (actions) actions.remove();
-                            if (avatarLink) avatarLink.outerHTML = `<span class="cm-avatar cm-avatar-fallback">?</span>`;
-
-                            card.querySelector('.pc-comment-count').textContent = data.comments_count;
-                        }).catch(() => {});
-                        return;
-                    }
-
-                    const replyBtn = e.target.closest('.cm-reply-btn');
-                    if (replyBtn) {
-                        const id = replyBtn.dataset.commentId;
-                        const form = document.getElementById(`cmReplyForm${id}`);
-                        if (!form) return;
-                        form.classList.toggle('d-none');
-                        if (!form.classList.contains('d-none')) {
-                            const input = form.querySelector('.cm-reply-input');
-                            input.placeholder = `{{ __('Reply to') }} ${replyBtn.dataset.authorName}...`;
-                            input.focus();
-                        }
-                        return;
-                    }
-
-                    const shareBtn = e.target.closest('.pc-share-btn');
-                    if (shareBtn) {
-                        const card = shareBtn.closest('.pc-card');
-                        const section = card.querySelector('.pc-share-section');
-                        section.classList.toggle('d-none');
-                        if (!section.classList.contains('d-none')) {
-                            section.querySelector('.pc-share-input').focus();
-                        }
-                        return;
-                    }
-
-                    const shareCancel = e.target.closest('.pc-share-cancel');
-                    if (shareCancel) {
-                        const section = shareCancel.closest('.pc-share-section');
+                    jsonFetch(`/posts/${card.dataset.postId}/share`, {
+                        method: 'POST',
+                        body: JSON.stringify({ caption: caption || null }),
+                    }).then((data) => {
+                        textarea.value = '';
                         section.classList.add('d-none');
-                        section.querySelector('.pc-share-input').value = '';
-                        return;
-                    }
-                });
-
-                document.addEventListener('submit', function (e) {
-                    const commentForm = e.target.closest('.pc-comment-composer-form');
-                    if (commentForm) {
-                        e.preventDefault();
-                        const input = commentForm.querySelector('.pc-comment-composer-input');
-                        const body = input.value.trim();
-                        if (!body) return;
-                        const card = commentForm.closest('.pc-card');
-
-                        jsonFetch(`/posts/${card.dataset.postId}/comments`, {
-                            method: 'POST',
-                            body: JSON.stringify({ body }),
-                        }).then((data) => {
-                            input.value = '';
-                            card.querySelector('.pc-comment-list').insertAdjacentHTML('beforeend', data.html);
-                            card.querySelector('.pc-comment-count').textContent = data.comments_count;
-                        }).catch(() => {});
-                        return;
-                    }
-
-                    const replyForm = e.target.closest('.cm-reply-form');
-                    if (replyForm) {
-                        e.preventDefault();
-                        const input = replyForm.querySelector('.cm-reply-input');
-                        const body = input.value.trim();
-                        if (!body) return;
-
-                        const postUuid = replyForm.dataset.postUuid;
-                        const parentId = replyForm.dataset.parentId;
-                        const card = replyForm.closest('.pc-card');
-
-                        jsonFetch(`/posts/${postUuid}/comments`, {
-                            method: 'POST',
-                            body: JSON.stringify({ body, parent_id: parentId }),
-                        }).then((data) => {
-                            input.value = '';
-                            replyForm.classList.add('d-none');
-                            document.getElementById(`cmReplies${parentId}`)
-                                .insertAdjacentHTML('beforeend', data.html);
-                            card.querySelector('.pc-comment-count').textContent = data.comments_count;
-                        }).catch(() => {});
-                        return;
-                    }
-
-                    const shareForm = e.target.closest('.pc-share-form');
-                    if (shareForm) {
-                        e.preventDefault();
-                        const textarea = shareForm.querySelector('.pc-share-input');
-                        const caption = textarea.value.trim();
-                        const card = shareForm.closest('.pc-card');
-                        const section = shareForm.closest('.pc-share-section');
-
-                        jsonFetch(`/posts/${card.dataset.postId}/share`, {
-                            method: 'POST',
-                            body: JSON.stringify({ caption: caption || null }),
-                        }).then((data) => {
-                            textarea.value = '';
-                            section.classList.add('d-none');
-                            card.querySelector('.pc-share-count').textContent = data.shares_count;
-                            document.dispatchEvent(new CustomEvent('post:created', {
-                                detail: { html: data.html },
-                            }));
-                        }).catch(() => {});
-                    }
-                });
-            })();
-        }
+                        card.querySelector('.pc-share-count').textContent = data.shares_count;
+                        document.dispatchEvent(new CustomEvent('post:created', {
+                            detail: { html: data.html },
+                        }));
+                    }).catch(() => {});
+                }
+            });
+        })();
     </script>
 @endonce
