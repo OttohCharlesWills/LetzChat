@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Group;
 use App\Models\GroupMember;
 use App\Models\Post;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 
 class GroupController extends Controller
@@ -62,29 +63,27 @@ class GroupController extends Controller
             'privacy'     => ['required', 'in:public,private'],
         ]);
 
-        $group = Group::create([
-            'name'        => $validated['name'],
-            'description' => $validated['description'] ?? null,
-            'privacy'     => $validated['privacy'],
-            'created_by'  => $request->user()->id,
-        ]);
+        $user = $request->user();
 
-        // Creator automatically becomes the first member, as admin.
         $group = Group::create([
-            'uuid' => Str::uuid(),
-            'name' => 'Developers',
-            'privacy' => 'public',
+            'uuid'          => (string) Str::uuid(),
+            'name'          => $validated['name'],
+            'description'   => $validated['description'] ?? null,
+            'privacy'       => $validated['privacy'],
             'join_approval' => 'automatic',
-            'created_by' => 3,
+            'created_by'    => $user->id,
         ]);
 
+        // Creator automatically becomes the first member.
         GroupMember::create([
             'group_id' => $group->id,
-            'user_id' => 3,
-            'role' => 'admin',
+            'user_id'  => $user->id,
+            'role'     => 'admin',
         ]);
 
-        return redirect()->route('groups.show', $group->uuid)->with('status', __('Group created!'));
+        return redirect()
+            ->route('groups.show', $group->uuid)
+            ->with('status', __('Group created!'));
     }
 
     public function show(Request $request, Group $group)
