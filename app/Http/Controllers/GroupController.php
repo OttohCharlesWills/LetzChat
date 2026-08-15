@@ -154,18 +154,47 @@ class GroupController extends Controller
         return response()->json(['groups' => $groups]);
     }
 
+    public function join(Request $request, Group $group)
+    {
+        $userId = $request->user()->id;
+
+        if ($group->isMember($request->user())) {
+            return back()->with('status', __('You are already a member.'));
+        }
+
+        if ($group->requiresJoinApproval()) {
+            \App\Models\GroupJoinRequest::updateOrCreate(
+                ['group_id' => $group->id, 'user_id' => $userId],
+                ['status' => 'pending']
+            );
+
+            return back()->with('status', __('Your request to join :name is awaiting approval.', ['name' => $group->name]));
+        }
+
+        GroupMember::firstOrCreate([
+            'group_id' => $group->id,
+            'user_id'  => $userId,
+        ], [
+            'role' => 'member',
+        ]);
+
+        return back()->with('status', __('Joined :name.', ['name' => $group->name]));
+    }
+
     public function joinRequests(Request $request, Group $group)
-{
-    abort_unless($group->isAdminOrModerator($request->user()), 403);
+    {
+        abort_unless($group->isAdminOrModerator($request->user()), 403);
 
-    $requests = $group->joinRequests()
-        ->where('status', 'pending')
-        ->with('user')
-        ->orderBy('created_at')
-        ->get();
+        $requests = $group->joinRequests()
+            ->where('status', 'pending')
+            ->with('user')
+            ->orderBy('created_at')
+            ->get();
 
-    return view('groups.join-requests', compact('group', 'requests'));
-}
+        $isAdmin = $group->isAdmin($request->user());
+
+        return view('groups.join-requests', compact('group', 'requests', 'isAdmin'));
+    }
 
 public function approveJoinRequest(Request $request, Group $group, \App\Models\GroupJoinRequest $joinRequest)
 {

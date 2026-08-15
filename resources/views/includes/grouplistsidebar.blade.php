@@ -19,7 +19,7 @@
             Admin Tools
         </div>
 
-        <a href="#" class="gp-side-item">
+        <a href="{{ route('groups.join-requests.index', $group) }}" class="gp-side-item">
             <i class="bi bi-person-check-fill"></i>
             <span>Member Requests</span>
         </a>

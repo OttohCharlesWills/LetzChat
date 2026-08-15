@@ -16,6 +16,9 @@ class Group extends Model
         'privacy',
         'cover_photo',
         'created_by',
+        'post_permission',
+        'require_post_approval', 
+        'join_approval',
     ];
 
     protected static function booted()
