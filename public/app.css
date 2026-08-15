@@ -5,7 +5,7 @@
     --sb-text-secondary: #65676b;
     --sb-hover: #f0f2f5;
     --sb-border: #e4e6eb;
-    --sb-avatar-fallback-bg: #0d6efd;
+    --sb-avatar-fallback-bg: #e85d3f;
     --sb-avatar-fallback-text: #ffffff;
 }
 
@@ -16,9 +16,13 @@
     --sb-text-secondary: #b0b3b8;
     --sb-hover: #4e4f50;
     --sb-border: #4b4c4d;
-    --sb-avatar-fallback-bg: #4599ff;
+    --sb-avatar-fallback-bg: #e85d3f;
     --sb-avatar-fallback-text: #050505;
 }
+
+    a{
+        text-decoration: none;
+    }
 
 .sb-wrap {
     background: var(--sb-bg);
@@ -136,7 +140,7 @@
 
     background:#e7f3ff;
 
-    color:#1877f2;
+    color:#e85d3f;
 }
 
 [data-theme="dark"] .gp-side-item.active{

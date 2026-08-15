@@ -33,7 +33,7 @@
             @if ($variant === 'request')
                 <form method="POST" action="{{ route('friends.accept', $friendshipId) }}">
                     @csrf
-                    <button type="submit" class="btn btn-primary btn-sm w-100">{{ __('Confirm') }}</button>
+                    <button type="submit" class="btn btn-primary btn-sm w-100" style="background-color:#e85d3f;  border: 1px solid #e85d3f;">{{ __('Confirm') }}</button>
                 </form>
                 <form method="POST" action="{{ route('friends.decline', $friendshipId) }}">
                     @csrf
@@ -42,7 +42,7 @@
             @elseif ($variant === 'suggestion')
                 <form method="POST" action="{{ route('friends.request', $person->uuid) }}">
                     @csrf
-                    <button type="submit" class="btn btn-primary btn-sm w-100">{{ __('Add friend') }}</button>
+                    <button type="submit" class="btn btn-primary btn-sm w-100" style="background-color:#e85d3f;  border: 1px solid #e85d3f;">{{ __('Add friend') }}</button>
                 </form>
             @elseif ($variant === 'friend')
                 <form method="POST" action="{{ route('friends.destroy', $friendshipId) }}">

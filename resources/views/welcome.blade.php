@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>Bloom — Connect. Share. Grow.</title>
+    <title>LetzChat — Connect. Share. Grow.</title>
 
     <style>
         * {
@@ -497,7 +497,7 @@
     <nav class="navbar">
 
         <a href="{{ url('/') }}" class="logo">
-            Bloom<span>.</span>
+            LetzChat<span>.</span>
         </a>
 
         @if (Route::has('login'))
@@ -514,7 +514,7 @@
 
                     @if (Route::has('register'))
                         <a href="{{ route('register') }}" class="btn btn-register">
-                            Join Bloom
+                            Join LetzChat
                         </a>
                     @endif
                 @endauth
@@ -541,7 +541,7 @@
                 </h1>
 
                 <p>
-                    Bloom is your space to meet people, share your thoughts,
+                    LetzChat is your space to meet people, share your thoughts,
                     discover communities, and keep up with the moments that
                     actually matter.
                 </p>
@@ -581,7 +581,7 @@
                         <div class="avatar">W</div>
 
                         <div class="user-info">
-                            <h4>Welcome to Bloom</h4>
+                            <h4>Welcome to LetzChat</h4>
                             <p>Just now · 🌍</p>
                         </div>
 
@@ -631,7 +631,7 @@
             <h2>More than just another feed.</h2>
 
             <p>
-                Bloom gives you a place to connect, share, and discover
+                LetzChat gives you a place to connect, share, and discover
                 without making everything feel like a chaotic digital marketplace.
             </p>
         </div>
@@ -698,7 +698,7 @@
         @guest
             @if (Route::has('register'))
                 <a href="{{ route('register') }}" class="btn btn-register">
-                    Join Bloom today →
+                    Join LetzChat today →
                 </a>
             @endif
         @else
@@ -712,7 +712,7 @@
 
     {{-- FOOTER --}}
     <footer>
-        © {{ date('Y') }} <strong>Bloom</strong>. Connect. Share. Grow. 🌸
+        © {{ date('Y') }} <strong>LetzChat</strong>. Connect. Share. Grow. 🌸
     </footer>
 
 </body>

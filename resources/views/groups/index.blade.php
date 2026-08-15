@@ -35,7 +35,7 @@
                 </a>
             </nav>
 
-            <a href="{{ route('groups.create') }}" class="btn btn-primary gr-create-btn">
+            <a href="{{ route('groups.create') }}" class="btn btn-primary gr-create-btn" style="background-color: #e85d3f; border: 1px solid #e85d3f;">
                 <i class="bi bi-plus-lg"></i> {{ __('Create New Group') }}
             </a>
 
@@ -126,7 +126,7 @@
                     @if ($posts->isEmpty())
                         <p class="text-muted mb-0">
                             {{ __("No recent activity. Join a group to see posts here, or") }}
-                            <a href="{{ route('groups.index', ['tab' => 'discover']) }}">{{ __('discover groups') }}</a>.
+                            <a href="{{ route('groups.index', ['tab' => 'discover']) }}" style="color:#e85d3f;">{{ __('discover groups') }}</a>.
                         </p>
                     @else
                         @foreach ($posts as $post)
@@ -155,9 +155,9 @@
         --gr-border: #e4e6eb;
         --gr-hover: #f0f2f5;
         --gr-active-bg: #e7f3ff;
-        --gr-active-text: #0d6efd;
+        --gr-active-text: #e85d3f;
         --gr-search-bg: #f0f2f5;
-        --gr-avatar-fallback-bg: #0d6efd;
+        --gr-avatar-fallback-bg: #e85d3f;
         --gr-avatar-fallback-text: #ffffff;
     }
 

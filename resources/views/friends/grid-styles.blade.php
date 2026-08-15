@@ -4,7 +4,7 @@
         --fp-text: #050505;
         --fp-text-secondary: #65676b;
         --fp-border: #e4e6eb;
-        --fp-avatar-fallback-bg: #0d6efd;
+        --fp-avatar-fallback-bg: #e85d3f;
         --fp-avatar-fallback-text: #ffffff;
     }
 
@@ -13,8 +13,12 @@
         --fp-text: #e4e6eb;
         --fp-text-secondary: #b0b3b8;
         --fp-border: #4b4c4d;
-        --fp-avatar-fallback-bg: #4599ff;
+        --fp-avatar-fallback-bg: #e85d3f;
         --fp-avatar-fallback-text: #050505;
+    }
+
+    a{
+        text-decoration: none;
     }
 
     .fp-section {

@@ -150,7 +150,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: var(--pc-avatar-fallback-bg, #0d6efd);
+        background: var(--pc-avatar-fallback-bg, #e85d3f);
         color: var(--pc-avatar-fallback-text, #fff) !important;
         font-weight: 700;
         font-size: 0.9rem;
@@ -268,12 +268,12 @@
     }
 
     .pp-btn-approve {
-        background: #0d6efd;
+        background: #e85d3f;
         color: #fff;
     }
 
     .pp-btn-approve:hover {
-        background: #0a58ca;
+        background: #e85d3f;
     }
 
     .pp-btn:disabled {

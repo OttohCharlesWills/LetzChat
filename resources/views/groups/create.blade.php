@@ -67,7 +67,7 @@
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary w-100 mt-3" id="gcSubmitBtn" disabled>
+                <button type="submit" class="btn btn-primary w-100 mt-3" id="gcSubmitBtn" disabled style="background-color: #e85d3f;border: 1px solid #e85d3f;">
                     {{ __('Create') }}
                 </button>
             </form>
@@ -124,7 +124,7 @@
         --gc-text-secondary: #65676b;
         --gc-border: #e4e6eb;
         --gc-hover: #f0f2f5;
-        --gc-avatar-fallback-bg: #0d6efd;
+        --gc-avatar-fallback-bg: #e85d3f;
         --gc-avatar-fallback-text: #ffffff;
     }
 
@@ -291,7 +291,7 @@
 
     .gc-preview-tab.active {
         color: var(--gc-text);
-        border-bottom: 2px solid #0d6efd;
+        border-bottom: 2px solid #e85d3f;
         padding-bottom: 10px;
         margin-bottom: -11px;
     }

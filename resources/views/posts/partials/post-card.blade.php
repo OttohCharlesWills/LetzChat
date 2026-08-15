@@ -1,7 +1,7 @@
 @php
     $myReaction = $post->isReactedToBy(auth()->user());
     $reactionMeta = [
-        'like'  => ['emoji' => '👍', 'label' => __('Like'),  'color' => '#0d6efd'],
+        'like'  => ['emoji' => '👍', 'label' => __('Like'),  'color' => '#e85d3f'],
         'love'  => ['emoji' => '❤️', 'label' => __('Love'),  'color' => '#e0245e'],
         'haha'  => ['emoji' => '😆', 'label' => __('Haha'),  'color' => '#f7b125'],
         'wow'   => ['emoji' => '😮', 'label' => __('Wow'),   'color' => '#f7b125'],
@@ -199,7 +199,7 @@
             --pc-border: #e4e6eb;
             --pc-text: #050505;
             --pc-text-secondary: #65676b;
-            --pc-avatar-fallback-bg: #0d6efd;
+            --pc-avatar-fallback-bg: #e85d3f;
             --pc-avatar-fallback-text: #ffffff;
             --pc-hover: #f0f2f5;
         }
@@ -209,7 +209,7 @@
             --pc-border: #3e4042;
             --pc-text: #e4e6eb;
             --pc-text-secondary: #b0b3b8;
-            --pc-avatar-fallback-bg: #4599ff;
+            --pc-avatar-fallback-bg: #e85d3f;
             --pc-avatar-fallback-text: #050505;
             --pc-hover: #3a3b3c;
         }
@@ -416,8 +416,8 @@
 
         .pc-follow-btn {
             background: none;
-            border: 1px solid #0d6efd;
-            color: #0d6efd !important;
+            border: 1px solid #e85d3f;
+            color: #e85d3f !important;
             border-radius: 14px;
             padding: 2px 10px;
             font-size: 0.75rem;
@@ -426,7 +426,7 @@
         }
 
         .pc-follow-btn:hover {
-            background: #0d6efd;
+            background: #e85d3f;
             color: #fff !important;
         }
 
@@ -599,7 +599,7 @@
         }
 
         .pc-like-btn.is-active .pc-like-emoji {
-            color: var(--pc-reaction-color, #0d6efd);
+            color: var(--pc-reaction-color, #e85d3f);
         }
 
         .pc-reaction-picker {
@@ -694,7 +694,7 @@
         .cm-reply-send-btn {
             background: none;
             border: none;
-            color: #0d6efd;
+            color: #e85d3f;
             font-size: 1.05rem;
             flex-shrink: 0;
             display: flex;
@@ -829,7 +829,7 @@
         }
 
         .cm-like-btn.liked {
-            color: #0d6efd;
+            color: #e85d3f;
         }
 
         .cm-delete-btn:hover {
@@ -891,7 +891,7 @@
             const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
             const REACTIONS = {
-                like:  { emoji: '👍', label: '{{ __('Like') }}',  color: '#0d6efd' },
+                like:  { emoji: '👍', label: '{{ __('Like') }}',  color: '#e85d3f' },
                 love:  { emoji: '❤️', label: '{{ __('Love') }}',  color: '#e0245e' },
                 haha:  { emoji: '😆', label: '{{ __('Haha') }}',  color: '#f7b125' },
                 wow:   { emoji: '😮', label: '{{ __('Wow') }}',   color: '#f7b125' },

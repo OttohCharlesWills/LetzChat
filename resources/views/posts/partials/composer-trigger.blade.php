@@ -36,6 +36,10 @@
 </div>
 
 <style>
+a{
+    text-decoration: none;
+}
+
     .composer-trigger-card {
         background: var(--sb-bg);
         border: 1px solid var(--sb-border);

@@ -75,7 +75,7 @@
         }
 
         .step-dot.active {
-            background: #0d6efd;
+            background: #e85d3f;
             color: #fff;
         }
 
@@ -382,7 +382,7 @@
                                         {{ __('Back') }}
                                     </button>
 
-                                    <button type="button" class="btn btn-primary" id="nextBtn">
+                                    <button type="button" class="btn btn-primary" id="nextBtn" style="background-color:#e85d3f; border:1px solid #e85d3f;">
                                         {{ __('Continue') }}
                                     </button>
 

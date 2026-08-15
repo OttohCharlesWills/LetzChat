@@ -71,7 +71,7 @@
                 </div>
 
                 <div class="nb-dropdown" id="nbProfileDropdown">
-                    <a href="{{ route('profile.show', Auth::user()->username) }}" class="nb-dropdown-item">
+                    <a href="{{ route('profile.show', auth()->user()->uuid) }}" class="nb-dropdown-item">
                         {{ __('View Profile') }}
                     </a>
                     <a href="{{ route('logout') }}" class="nb-dropdown-item"
@@ -104,8 +104,8 @@
         --nb-text-secondary: #65676b;
         --nb-border: #e4e6eb;
         --nb-hover: #f0f2f5;
-        --nb-accent: #0d6efd;
-        --nb-avatar-fallback-bg: #0d6efd;
+        --nb-accent: #e85d3f;
+        --nb-avatar-fallback-bg: #e85d3f;
         --nb-avatar-fallback-text: #ffffff;
         --nb-search-bg: #f0f2f5;
     }
@@ -117,7 +117,7 @@
         --nb-border: #3e4042;
         --nb-hover: #3a3b3c;
         --nb-accent: #4599ff;
-        --nb-avatar-fallback-bg: #4599ff;
+        --nb-avatar-fallback-bg: #e85d3f;
         --nb-avatar-fallback-text: #050505;
         --nb-search-bg: #3a3b3c;
     }

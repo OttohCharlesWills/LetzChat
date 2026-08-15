@@ -41,7 +41,7 @@
     <div class="fp-section">
         <div class="fp-section-header">
             <div class="fp-section-title">{{ __('People you may know') }}</div>
-            <a href="{{ route('friends.suggestions') }}" class="fp-see-all">{{ __('See all') }}</a>
+            <a href="{{ route('friends.suggestions') }}" class="fp-see-all" style="color:#e85d3f;">{{ __('See all') }}</a>
         </div>
 
         @if ($suggestions->isEmpty())

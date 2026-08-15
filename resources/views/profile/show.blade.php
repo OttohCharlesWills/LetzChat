@@ -189,7 +189,7 @@
             <div class="pf-card">
                 <div class="pf-card-header">
                     <div class="pf-card-title">{{ __('Friends') }} ({{ $friendsCount }})</div>
-                    <a href="{{ route('friends.all') }}" class="pf-see-all">{{ __('See all friends') }}</a>
+                    <a href="{{ route('friends.all') }}" class="pf-see-all" style="color:#e85d3f;">{{ __('See all friends') }}</a>
                 </div>
 
                 @if ($friendsPreview->isEmpty())
@@ -242,7 +242,7 @@
         --pf-text-secondary: #65676b;
         --pf-border: #e4e6eb;
         --pf-hover: #f0f2f5;
-        --pf-avatar-fallback-bg: #0d6efd;
+        --pf-avatar-fallback-bg: #e85d3f;
         --pf-avatar-fallback-text: #ffffff;
         --pf-cover-bg: #dfe3e8;
     }
@@ -253,7 +253,7 @@
         --pf-text-secondary: #b0b3b8;
         --pf-border: #3e4042;
         --pf-hover: #3a3b3c;
-        --pf-avatar-fallback-bg: #4599ff;
+        --pf-avatar-fallback-bg: #e85d3f;
         --pf-avatar-fallback-text: #050505;
         --pf-cover-bg: #18191a;
     }
@@ -496,8 +496,8 @@
     }
 
     .pf-tab.active {
-        color: #0d6efd;
-        border-bottom-color: #0d6efd;
+        color: #e85d3f;
+        border-bottom-color: #e85d3f;
     }
 
     .pf-body {

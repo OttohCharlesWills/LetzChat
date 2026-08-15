@@ -225,7 +225,7 @@
     }
 
     .gs-switch input:checked + .gs-switch-track {
-        background: #0d6efd;
+        background: #e85d3f;
     }
 
     .gs-switch input:checked + .gs-switch-track .gs-switch-thumb {
@@ -234,7 +234,7 @@
 
     .gs-save-btn {
         width: 100%;
-        background: #0d6efd;
+        background: #e85d3f;
         color: #fff;
         border: none;
         border-radius: 8px;

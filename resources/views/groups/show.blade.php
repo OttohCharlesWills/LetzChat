@@ -4,7 +4,7 @@
 <div class="gp-page container">
 
     @if (session('status'))
-        <div class="alert alert-success">{{ session('status') }}</div>
+        @include('friends.flash')
     @endif
 
     {{-- ================= COVER + IDENTITY ================= --}}
@@ -173,7 +173,7 @@
         --gp-text-secondary: #65676b;
         --gp-border: #e4e6eb;
         --gp-hover: #f0f2f5;
-        --gp-avatar-fallback-bg: #0d6efd;
+        --gp-avatar-fallback-bg: #e85d3f;
         --gp-avatar-fallback-text: #ffffff;
         --gp-cover-bg: #dfe3e8;
     }

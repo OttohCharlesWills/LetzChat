@@ -39,7 +39,7 @@
             --fnav-text-secondary: #65676b;
             --fnav-hover: #f0f2f5;
             --fnav-active-bg: #e7f3ff;
-            --fnav-active-text: #0d6efd;
+            --fnav-active-text: #e85d3f;
         }
 
         [data-theme="dark"] {
@@ -48,7 +48,7 @@
             --fnav-text-secondary: #b0b3b8;
             --fnav-hover: #4e4f50;
             --fnav-active-bg: #263951;
-            --fnav-active-text: #4599ff;
+            --fnav-active-text: #e85d3f;
         }
 
         .fnav-wrap {

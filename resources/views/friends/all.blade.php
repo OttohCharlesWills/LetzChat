@@ -39,7 +39,7 @@
         --fl-hover: #f0f2f5;
         --fl-active-bg: #e7f3ff;
         --fl-search-bg: #f0f2f5;
-        --fl-avatar-fallback-bg: #0d6efd;
+        --fl-avatar-fallback-bg: #e85d3f;
         --fl-avatar-fallback-text: #ffffff;
     }
 
@@ -51,7 +51,7 @@
         --fl-hover: #4e4f50;
         --fl-active-bg: #263951;
         --fl-search-bg: #4e4f50;
-        --fl-avatar-fallback-bg: #4599ff;
+        --fl-avatar-fallback-bg: #e85d3f;
         --fl-avatar-fallback-text: #050505;
     }
 
