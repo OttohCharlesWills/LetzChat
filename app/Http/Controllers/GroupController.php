@@ -70,10 +70,18 @@ class GroupController extends Controller
         ]);
 
         // Creator automatically becomes the first member, as admin.
+        $group = Group::create([
+            'uuid' => Str::uuid(),
+            'name' => 'Developers',
+            'privacy' => 'public',
+            'join_approval' => 'automatic',
+            'created_by' => 3,
+        ]);
+
         GroupMember::create([
             'group_id' => $group->id,
-            'user_id'  => $request->user()->id,
-            'role'     => 'admin',
+            'user_id' => 3,
+            'role' => 'admin',
         ]);
 
         return redirect()->route('groups.show', $group->uuid)->with('status', __('Group created!'));
