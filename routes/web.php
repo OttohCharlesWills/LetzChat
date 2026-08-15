@@ -112,7 +112,7 @@ Route::middleware('auth')->prefix('groups')->name('groups.')->group(function () 
     Route::get('/create', [GroupController::class, 'create'])->name('create');
     Route::post('/', [GroupController::class, 'store'])->name('store');
     Route::get('/{group}', [GroupController::class, 'show'])->name('show');
-    // Route::post('/{group}/join', [GroupController::class, 'join'])->name('join');
+    Route::post('/{group}/join', [GroupController::class, 'join'])->name('join');
     Route::post('/{group}/leave', [GroupController::class, 'leave'])->name('leave');
     Route::post('/{group}/cover', [GroupController::class, 'updateCoverPhoto'])->name('cover.update');
 });
