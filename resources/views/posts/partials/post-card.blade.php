@@ -192,7 +192,6 @@
     <img src="" alt="" id="pcLightboxImg">
 </div>
 
-@once
     <style>
         :root {
             --pc-bg: #ffffff;
@@ -1234,4 +1233,3 @@
             })();
         }
     </script>
-@endonce
