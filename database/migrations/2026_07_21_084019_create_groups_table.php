@@ -23,8 +23,7 @@ return new class extends Migration
             // 'automatic' -> joining adds the user immediately
             // 'manual'    -> joining creates a pending request for approval
             $table->enum('join_approval', ['automatic', 'manual'])
-                ->default('automatic')
-                ->after('privacy');
+                ->default('automatic');
 
             $table->string('cover_photo')->nullable();
 
