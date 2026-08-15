@@ -63,27 +63,21 @@ class GroupController extends Controller
             'privacy'     => ['required', 'in:public,private'],
         ]);
 
-        $user = $request->user();
-
         $group = Group::create([
-            'uuid'          => (string) Str::uuid(),
-            'name'          => $validated['name'],
-            'description'   => $validated['description'] ?? null,
-            'privacy'       => $validated['privacy'],
-            'join_approval' => 'automatic',
-            'created_by'    => $user->id,
+            'name'        => $validated['name'],
+            'description' => $validated['description'] ?? null,
+            'privacy'     => $validated['privacy'],
+            'created_by'  => $request->user()->id,
         ]);
 
-        // Creator automatically becomes the first member.
+        // Creator automatically becomes the first member, as admin.
         GroupMember::create([
             'group_id' => $group->id,
-            'user_id'  => $user->id,
+            'user_id'  => $request->user()->id,
             'role'     => 'admin',
         ]);
 
-        return redirect()
-            ->route('groups.show', $group->uuid)
-            ->with('status', __('Group created!'));
+        return redirect()->route('groups.show', $group->uuid)->with('status', __('Group created!'));
     }
 
     public function show(Request $request, Group $group)
