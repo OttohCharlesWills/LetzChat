@@ -69,58 +69,64 @@ class PostController extends Controller
     return view('posts.index', compact('posts', 'friends'));
 }
 
-//     public function store(Request $request)
-// {
-//     $validated = $request->validate([
-//         'body' => ['nullable', 'string', 'max:5000'],
-//         'visibility' => ['required', 'in:public,friends,custom,private'],
-//         'excluded_user_ids' => ['nullable', 'array'],
-//         'excluded_user_ids.*' => ['exists:users,id'],
-//         'images' => ['nullable', 'array', 'max:10'],
-//         'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:8192'],
-//     ]);
 
-//     // A post needs at least a body or at least one image
-//     if (empty($validated['body']) && ! $request->hasFile('images')) {
-//         return response()->json([
-//             'message' => __('A post needs either text or at least one image.'),
-//         ], 422);
-//     }
+public function storeInGroup(Request $request, \App\Models\Group $group)
+{
+    $validated = $request->validate([
+        'body' => ['nullable', 'string', 'max:5000'],
+        'images' => ['nullable', 'array', 'max:10'],
+        'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:8192'],
+    ]);
 
-//     $post = $request->user()->posts()->create([
-//         'body' => $validated['body'] ?? null,
-//         'visibility' => $validated['visibility'],
-//     ]);
+    if (empty($validated['body']) && ! $request->hasFile('images')) {
+        return response()->json([
+            'message' => __('A post needs either text or at least one image.'),
+        ], 422);
+    }
 
-//     if ($request->hasFile('images')) {
-//         foreach ($request->file('images') as $index => $file) {
-//             $path = $file->store('posts', 'cloudinary');
-//             $url = Storage::disk('cloudinary')->url($path);
+    if (! $group->allowsPostingBy($request->user())) {
+        return response()->json([
+            'message' => __('You do not have permission to post in this group.'),
+        ], 403);
+    }
 
-//             $post->images()->create([
-//                 'url' => $url,
-//                 'public_id' => $path,
-//                 'position' => $index,
-//             ]);
-//         }
-//     }
+    $status = $group->requiresApprovalFor($request->user()) ? 'pending' : 'published';
 
-//     if ($validated['visibility'] === 'custom' && ! empty($validated['excluded_user_ids'])) {
-//         $post->excludedUsers()->sync($validated['excluded_user_ids']);
-//     }
+    $post = $request->user()->posts()->create([
+        'body' => $validated['body'] ?? null,
+        'visibility' => 'public',
+        'group_id' => $group->id,
+        'status' => $status,
+    ]);
 
-//     $post->load(['user', 'images']);
+    if ($request->hasFile('images')) {
+        foreach ($request->file('images') as $index => $file) {
+            $path = $file->store('posts', 'cloudinary');
+            $url = Storage::disk('cloudinary')->url($path);
 
-//     if ($request->wantsJson()) {
-//         return response()->json([
-//             'message' => __('Your post has been shared.'),
-//             'html' => view('posts.partials.post-card', ['post' => $post])->render(),
-//             'id' => $post->uuid,   // <-- add this line
-//         ]);
-//     }
+            $post->images()->create([
+                'url' => $url,
+                'public_id' => $path,
+                'position' => $index,
+            ]);
+        }
+    }
 
-//     return back()->with('status', __('Your post has been shared.'));
-// }
+    $post->load(['user', 'images']);
+
+    return response()->json([
+        'message' => $status === 'pending'
+            ? __('Your post was submitted and is awaiting admin approval.')
+            : __('Your post has been shared.'),
+        'html' => $status === 'published'
+            ? view('posts.partials.post-card', ['post' => $post])->render()
+            : null,
+        'id' => $post->uuid,
+        'status' => $status,
+    ]);
+}
+
+
 public function store(Request $request)
 {
     $validated = $request->validate([

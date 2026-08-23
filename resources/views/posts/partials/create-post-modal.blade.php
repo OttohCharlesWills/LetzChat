@@ -791,13 +791,16 @@
             formData.delete('video');
             selectedImages.forEach(file => formData.append('images[]', file));
 
+            let url = form.action;
+
             if (groupId) {
-                formData.set('group_id', groupId);
-                formData.set('visibility', 'public');
+                formData.delete('group_id');
+                formData.delete('visibility');
                 formData.delete('excluded_user_ids[]');
+                url = `/groups/${groupId}/posts`;
             }
 
-            return fetch(form.action, {
+            return fetch(url, {
                 method: 'POST',
                 headers: { 'Accept': 'application/json' },
                 body: formData,

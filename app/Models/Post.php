@@ -22,6 +22,7 @@ class Post extends Model
         'comments_enabled', 
         'shared_post_id',
         'group_id', 
+        'status',
 
     ];
 

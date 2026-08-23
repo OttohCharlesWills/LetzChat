@@ -16,24 +16,6 @@
         </button>
     </div>
 
-    {{-- <div class="composer-trigger-divider"></div> --}}
-
-    {{-- <div class="composer-trigger-actions">
-        <button type="button" class="composer-trigger-action" disabled title="{{ __('Coming soon') }}">
-            <span class="composer-trigger-icon composer-trigger-icon--live">🎥</span>
-            {{ __('Live video') }}
-        </button>
-
-        <button type="button" class="composer-trigger-action" disabled title="{{ __('Coming soon') }}">
-            <span class="composer-trigger-icon composer-trigger-icon--photo">🖼️</span>
-            {{ __('Photo/video') }}
-        </button>
-
-        <button type="button" class="composer-trigger-action" id="composerTriggerFeeling">
-            <span class="composer-trigger-icon composer-trigger-icon--feeling">🙂</span>
-            {{ __('Feeling/activity') }}
-        </button>
-    </div> --}}
 </div>
 
 <style>
