@@ -199,7 +199,7 @@
             --pc-border: #e4e6eb;
             --pc-text: #050505;
             --pc-text-secondary: #65676b;
-            --pc-avatar-fallback-bg: #0d6efd;
+            --pc-avatar-fallback-bg: #e85d3f;
             --pc-avatar-fallback-text: #ffffff;
             --pc-hover: #f0f2f5;
         }
@@ -209,7 +209,7 @@
             --pc-border: #3e4042;
             --pc-text: #e4e6eb;
             --pc-text-secondary: #b0b3b8;
-            --pc-avatar-fallback-bg: #4599ff;
+            --pc-avatar-fallback-bg: #e85d3f;
             --pc-avatar-fallback-text: #050505;
             --pc-hover: #3a3b3c;
         }
