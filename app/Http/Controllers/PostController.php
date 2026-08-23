@@ -84,15 +84,38 @@ public function storeInGroup(Request $request, \App\Models\Group $group)
         ], 422);
     }
 
-    if (! $group->allowsPostingBy($request->user())) {
+    $user = $request->user();
+
+    // Look up this user's role in the group directly — no model helper,
+    // no indirection, straight from the DB.
+    $role = \App\Models\GroupMember::where('group_id', $group->id)
+        ->where('user_id', $user->id)
+        ->value('role');
+
+    if (! $role) {
+        return response()->json([
+            'message' => __('You must be a member of this group to post.'),
+        ], 403);
+    }
+
+    $isAdminOrModerator = in_array($role, ['admin', 'moderator'], true);
+
+    if ($group->post_permission === 'admin_only' && ! $isAdminOrModerator) {
         return response()->json([
             'message' => __('You do not have permission to post in this group.'),
         ], 403);
     }
 
-    $status = $group->requiresApprovalFor($request->user()) ? 'pending' : 'published';
+    // Decide status directly, inline — no requiresApprovalFor() call.
+    if ($isAdminOrModerator) {
+        $status = 'published';
+    } elseif ($group->post_permission === 'everyone' && $group->require_post_approval) {
+        $status = 'pending';
+    } else {
+        $status = 'published';
+    }
 
-    $post = $request->user()->posts()->create([
+    $post = $user->posts()->create([
         'body' => $validated['body'] ?? null,
         'visibility' => 'public',
         'group_id' => $group->id,
@@ -123,6 +146,10 @@ public function storeInGroup(Request $request, \App\Models\Group $group)
             : null,
         'id' => $post->uuid,
         'status' => $status,
+        // Debug fields — remove once confirmed working
+        '_debug_role' => $role,
+        '_debug_post_permission' => $group->post_permission,
+        '_debug_require_post_approval' => $group->require_post_approval,
     ]);
 }
 
