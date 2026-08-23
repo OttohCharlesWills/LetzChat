@@ -63,7 +63,7 @@ Route::post('/{conversation}/voice', [ChatController::class, 'sendVoiceNote'])->
 // POST ROUTES 
 Route::get('/posts', [PostController::class, 'index'])->name('posts.index');
 Route::post('/posts', [PostController::class, 'store'])->name('posts.store');
-Route::post('/groups/{group}/posts', [PostController::class, 'storeInGroup'])->name('groups.posts.store');
+Route::post('/groups/{group:id}/posts', [PostController::class, 'storeInGroup'])->name('groups.posts.store');
 Route::delete('/posts/{post}', [PostController::class, 'destroy'])->name('posts.destroy');
 Route::get('/posts/{post}/reactors', [PostController::class, 'reactors'])->name('posts.reactors');
 
