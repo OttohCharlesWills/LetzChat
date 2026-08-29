@@ -12,6 +12,13 @@ return new class extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
 
+            $table->foreignId('group_id')
+                ->nullable()
+                ->unique()
+                ->after('type')
+                ->constrained('groups')
+                ->cascadeOnDelete();
+
             // 'private' = exactly 2 participants (a normal 1:1 DM)
             // 'group'   = 3+ participants, has a name/avatar of its own
             $table->enum('type', ['private', 'group'])->default('private');

@@ -25,7 +25,7 @@ return new class extends Migration
             // 'file'   -> attachment_path has the file, attachment_name for display
             // 'voice'  -> attachment_path has the audio recording, duration_seconds set
             // 'system' -> body holds text like "X added Y to the group" (no sender bubble)
-            $table->enum('type', ['text', 'image', 'file', 'voice', 'system'])->default('text');
+            $table->enum('type', ['text', 'image', 'file', 'voice', 'sticker', 'system'])->default('text');
  
             $table->text('body')->nullable();
  

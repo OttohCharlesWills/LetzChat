@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class Group extends Model
@@ -95,50 +96,146 @@ class Group extends Model
     }
 
     public function memberRoleFor(?User $user): ?string
-{
-    if (! $user) {
-        return null;
+    {
+        if (! $user) {
+            return null;
+        }
+
+        return $this->members()->where('user_id', $user->id)->value('role');
     }
 
-    return $this->members()->where('user_id', $user->id)->value('role');
-}
-
-public function isAdminOrModerator(?User $user): bool
-{
-    return in_array($this->memberRoleFor($user), ['admin', 'moderator'], true);
-}
-
-public function allowsPostingBy(?User $user): bool
-{
-    $role = $this->memberRoleFor($user);
-
-    if (! $role) {
-        return false; // not a member
+    public function isAdminOrModerator(?User $user): bool
+    {
+        return in_array($this->memberRoleFor($user), ['admin', 'moderator'], true);
     }
 
-    if ($this->post_permission === 'admin_only') {
-        return in_array($role, ['admin', 'moderator'], true);
+    public function allowsPostingBy(?User $user): bool
+    {
+        $role = $this->memberRoleFor($user);
+
+        if (! $role) {
+            return false; // not a member
+        }
+
+        if ($this->post_permission === 'admin_only') {
+            return in_array($role, ['admin', 'moderator'], true);
+        }
+
+        return true; // 'everyone' + is a member
     }
 
-    return true; // 'everyone' + is a member
-}
+    public function requiresApprovalFor(User $user): bool
+    {
+        if ($this->isAdminOrModerator($user)) {
+            return false;
+        }
 
-public function requiresApprovalFor(User $user): bool
-{
-    if ($this->isAdminOrModerator($user)) {
-        return false;
+        return $this->post_permission === 'everyone' && $this->require_post_approval;
     }
 
-    return $this->post_permission === 'everyone' && $this->require_post_approval;
-}
+    public function joinRequests()
+    {
+        return $this->hasMany(GroupJoinRequest::class);
+    }
 
-public function joinRequests()
-{
-    return $this->hasMany(GroupJoinRequest::class);
-}
+    public function requiresJoinApproval(): bool
+    {
+        return $this->join_approval === 'manual';
+    }
 
-public function requiresJoinApproval(): bool
-{
-    return $this->join_approval === 'manual';
-}
+    /**
+     * The group's chat conversation (1:1, always type 'group').
+     */
+    public function conversation()
+    {
+        return $this->hasOne(Conversation::class);
+    }
+
+    /**
+     * Get this group's Conversation, creating it (and attaching current
+     * members) on first access. Safe to call every time you open group chat.
+     */
+    public function getOrCreateConversation(): Conversation
+    {
+        if ($this->conversation) {
+            return $this->conversation;
+        }
+
+        return DB::transaction(function () {
+            $conversation = Conversation::create([
+                'type'       => 'group',
+                'group_id'   => $this->id,
+                'name'       => $this->name,
+                'avatar'     => $this->cover_photo,
+                'created_by' => $this->created_by,
+            ]);
+
+            $attach = $this->memberUsers()->pluck('users.id')
+                ->mapWithKeys(fn ($userId) => [$userId => ['role' => 'member']])
+                ->all();
+
+            if (! empty($attach)) {
+                $conversation->participants()->attach($attach);
+            }
+
+            $this->setRelation('conversation', $conversation);
+
+            return $conversation;
+        });
+    }
+
+    /**
+     * Re-sync the group chat's participants to match current group_members.
+     * Call this right after you attach/detach a row in group_members —
+     * i.e. at the end of your join, leave, approve-request, and remove-member
+     * flows — so the chat's membership never drifts from the group's.
+     *
+     * No-ops if the conversation hasn't been created yet (first chat open
+     * will attach everyone anyway).
+     */
+    public function syncConversationParticipants(): void
+    {
+        if (! $this->conversation) {
+            return;
+        }
+
+        $currentMemberIds = $this->memberUsers()->pluck('users.id')->all();
+
+        $participantIds = $this->conversation->participants()
+            ->wherePivotNull('left_at')
+            ->pluck('users.id')
+            ->all();
+
+        $toAdd = array_diff($currentMemberIds, $participantIds);
+        $toRemove = array_diff($participantIds, $currentMemberIds);
+
+        if (! empty($toAdd)) {
+            $attach = collect($toAdd)
+                ->mapWithKeys(fn ($userId) => [$userId => ['role' => 'member']])
+                ->all();
+
+            $this->conversation->participants()->syncWithoutDetaching($attach);
+        }
+
+        if (! empty($toRemove)) {
+            $this->conversation->participants()->updateExistingPivot($toRemove, [
+                'left_at' => now(),
+            ]);
+        }
+    }
+
+        public function ownershipTransfers()
+    {
+        return $this->hasMany(GroupOwnershipTransfer::class);
+    }
+
+    public function pendingOwnershipTransfer()
+    {
+        return $this->hasOne(GroupOwnershipTransfer::class)->where('status', 'pending')->latestOfMany();
+    }
+
+    public function owner(): ?User
+    {
+        return $this->memberUsers()->wherePivot('role', 'admin')->first();
+    }
 }

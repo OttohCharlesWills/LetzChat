@@ -38,8 +38,6 @@ class GroupController extends Controller
                 ->orderByDesc('members_count')
                 ->paginate(12);
         } else {
-            // 'feed' and 'mine' both start from your groups' posts;
-            // 'mine' view just emphasizes the group list over the feed.
             $groupIds = $myGroups->pluck('id');
             $posts = Post::whereIn('group_id', $groupIds)
                 ->with(['user', 'group'])
@@ -70,7 +68,8 @@ class GroupController extends Controller
             'created_by'  => $request->user()->id,
         ]);
 
-        // Creator automatically becomes the first member, as admin.
+        // Creator is the group's one and only admin — this role can't be
+        // taken by anyone else except via an explicit transferAdmin() call.
         GroupMember::create([
             'group_id' => $group->id,
             'user_id'  => $request->user()->id,
@@ -99,11 +98,6 @@ class GroupController extends Controller
         return view('groups.show', compact('group', 'isMember', 'isAdmin', 'posts', 'memberPreview'));
     }
 
-    /**
-     * Upload/replace this group's cover photo. Admin only.
-     * Same Storage::disk('cloudinary') pattern as ProfileController — this
-     * package version doesn't support the old Cloudinary::upload() facade call.
-     */
     public function updateCoverPhoto(Request $request, Group $group)
     {
         abort_unless($group->isAdmin($request->user()), 403);
@@ -123,21 +117,111 @@ class GroupController extends Controller
         ]);
     }
 
+    /**
+     * Leave the group.
+     *
+     * - Regular member / moderator: leaves immediately.
+     * - Admin: CANNOT just leave. They must first transfer adminship to
+     *   someone else (see transferAdmin()), or delete the group entirely
+     *   (see destroy()). This keeps a group from ever being left admin-less.
+     */
     public function leave(Request $request, Group $group)
     {
         $membership = $group->members()->where('user_id', $request->user()->id)->first();
 
-        if ($membership) {
-            abort_if(
-                $membership->role === 'admin' && $group->members()->where('role', 'admin')->count() === 1,
-                403,
-                'Promote another admin before leaving — a group can\'t be left with no admins.'
-            );
-
-            $membership->delete();
+        if (! $membership) {
+            return back()->with('status', __('You are not a member of :name.', ['name' => $group->name]));
         }
 
+        abort_if(
+            $membership->role === 'admin',
+            403,
+            'As the group owner, you can\'t leave directly. Transfer ownership to another member first, or delete the group instead.'
+        );
+
+        $membership->delete();
+
+        $group->syncConversationParticipants();
+
         return back()->with('status', __('You left :name.', ['name' => $group->name]));
+    }
+
+    /**
+     * Delete the group entirely. Admin only — this is the other valid way
+     * for an admin to walk away, besides transferring adminship first.
+     */
+    public function destroy(Request $request, Group $group)
+        {
+            abort_unless($group->isAdmin($request->user()), 403);
+
+            $group->delete();
+
+            return redirect()->route('groups.index')->with('status', __(':name was deleted.', ['name' => $group->name]));
+        }
+
+    /**
+     * Transfer the admin role to another member. Only the current admin can
+     * do this. The old admin becomes a regular member; the group still only
+     * ever has exactly one admin at a time.
+     */
+    public function transferAdmin(Request $request, Group $group, \App\Models\User $user)
+    {
+        $actor = $request->user();
+
+        abort_unless($group->isAdmin($actor), 403);
+        abort_if($user->id === $actor->id, 403, 'You are already the admin.');
+
+        $newAdminMembership = $group->members()->where('user_id', $user->id)->first();
+
+        abort_unless($newAdminMembership, 404, 'That user is not a member of this group.');
+
+        $currentAdminMembership = $group->members()->where('user_id', $actor->id)->first();
+
+        $newAdminMembership->update(['role' => 'admin']);
+        $currentAdminMembership?->update(['role' => 'member']);
+
+        $group->syncConversationParticipants();
+
+        return response()->json([
+            'message' => __(':name is now the admin of :group.', ['name' => $user->first_name, 'group' => $group->name]),
+        ]);
+    }
+
+    /**
+     * Admin/moderator removes another member from the group (a "kick").
+     * Distinct from leave() — this is other-initiated, not self-initiated.
+     *
+     * Rules:
+     * - Admin or moderator only.
+     * - Can't kick yourself — use "Leave group" for that.
+     * - The admin (group creator) can NEVER be kicked, by anyone, under any
+     *   condition. They can only be replaced via transferAdmin(), or the
+     *   group can be deleted via destroy().
+     */
+    public function removeMember(Request $request, Group $group, \App\Models\User $user)
+    {
+        $actor = $request->user();
+
+        abort_unless($group->isAdminOrModerator($actor), 403);
+        abort_if($user->id === $actor->id, 403, "Use \"Leave group\" to remove yourself.");
+
+        $membership = $group->members()->where('user_id', $user->id)->first();
+
+        abort_unless($membership, 404, 'That user is not a member of this group.');
+
+        abort_if(
+            $membership->role === 'admin',
+            403,
+            'The group owner can\'t be removed. They can only leave by transferring ownership or deleting the group.'
+        );
+
+        $membership->delete();
+
+        $group->syncConversationParticipants();
+
+        return response()->json([
+            'message' => __(':name was removed from :group.', ['name' => $user->first_name, 'group' => $group->name]),
+        ]);
     }
 
     public function postable(Request $request)
@@ -178,6 +262,8 @@ class GroupController extends Controller
             'role' => 'member',
         ]);
 
+        $group->syncConversationParticipants();
+
         return back()->with('status', __('Joined :name.', ['name' => $group->name]));
     }
 
@@ -196,56 +282,58 @@ class GroupController extends Controller
         return view('groups.join-requests', compact('group', 'requests', 'isAdmin'));
     }
 
-public function approveJoinRequest(Request $request, Group $group, \App\Models\GroupJoinRequest $joinRequest)
-{
-    abort_unless($group->isAdminOrModerator($request->user()), 403);
-    abort_unless($joinRequest->group_id === $group->id, 404);
+    public function approveJoinRequest(Request $request, Group $group, \App\Models\GroupJoinRequest $joinRequest)
+    {
+        abort_unless($group->isAdminOrModerator($request->user()), 403);
+        abort_unless($joinRequest->group_id === $group->id, 404);
 
-    GroupMember::firstOrCreate([
-        'group_id' => $group->id,
-        'user_id'  => $joinRequest->user_id,
-    ], ['role' => 'member']);
+        GroupMember::firstOrCreate([
+            'group_id' => $group->id,
+            'user_id'  => $joinRequest->user_id,
+        ], ['role' => 'member']);
 
-    $joinRequest->update(['status' => 'approved']);
+        $joinRequest->update(['status' => 'approved']);
 
-    return response()->json(['message' => __('Request approved.')]);
-}
+        $group->syncConversationParticipants();
 
-public function rejectJoinRequest(Request $request, Group $group, \App\Models\GroupJoinRequest $joinRequest)
-{
-    abort_unless($group->isAdminOrModerator($request->user()), 403);
-    abort_unless($joinRequest->group_id === $group->id, 404);
+        return response()->json(['message' => __('Request approved.')]);
+    }
 
-    $joinRequest->update(['status' => 'rejected']);
+    public function rejectJoinRequest(Request $request, Group $group, \App\Models\GroupJoinRequest $joinRequest)
+    {
+        abort_unless($group->isAdminOrModerator($request->user()), 403);
+        abort_unless($joinRequest->group_id === $group->id, 404);
 
-    return response()->json(['message' => __('Request rejected.')]);
-}
+        $joinRequest->update(['status' => 'rejected']);
 
-public function settings(Request $request, Group $group)
-{
-    $isAdmin = $group->isAdmin($request->user());
+        return response()->json(['message' => __('Request rejected.')]);
+    }
 
-    abort_unless($isAdmin, 403);
+    public function settings(Request $request, Group $group)
+    {
+        $isAdmin = $group->isAdmin($request->user());
 
-    return view('groups.settings', compact('group', 'isAdmin'));
-}
+        abort_unless($isAdmin, 403);
 
-public function updateSettings(Request $request, Group $group)
-{
-    abort_unless($group->isAdmin($request->user()), 403);
+        return view('groups.settings', compact('group', 'isAdmin'));
+    }
 
-    $validated = $request->validate([
-        'post_permission' => ['required', 'in:everyone,admin_only'],
-        'require_post_approval' => ['nullable', 'boolean'],
-        'join_approval' => ['required', 'in:automatic,manual'],
-    ]);
+    public function updateSettings(Request $request, Group $group)
+    {
+        abort_unless($group->isAdmin($request->user()), 403);
 
-    $group->update([
-        'post_permission' => $validated['post_permission'],
-        'require_post_approval' => $request->boolean('require_post_approval'),
-        'join_approval' => $validated['join_approval'],
-    ]);
+        $validated = $request->validate([
+            'post_permission' => ['required', 'in:everyone,admin_only'],
+            'require_post_approval' => ['nullable', 'boolean'],
+            'join_approval' => ['required', 'in:automatic,manual'],
+        ]);
 
-    return back()->with('status', __('Group settings updated.'));
-}
+        $group->update([
+            'post_permission' => $validated['post_permission'],
+            'require_post_approval' => $request->boolean('require_post_approval'),
+            'join_approval' => $validated['join_approval'],
+        ]);
+
+        return back()->with('status', __('Group settings updated.'));
+    }
 }

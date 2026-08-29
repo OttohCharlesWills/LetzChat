@@ -44,6 +44,13 @@
             </div>
 
             <div class="gp-toolbar-actions">
+
+                @if ($isMember)
+                    <a href="{{ route('groups.chat', $group->uuid) }}" class="btn btn-primary btn-sm gp-chat-btn">
+                        <i class="bi bi-chat-dots-fill"></i> {{ __('Group Chat') }}
+                    </a>
+                @endif
+                
                 <button type="button" class="btn btn-primary btn-sm gp-invite-btn" title="{{ __('Coming soon') }}" disabled>
                     <i class="bi bi-person-plus-fill"></i> {{ __('Invite') }}
                 </button>

@@ -12,6 +12,7 @@ class Conversation extends Model
 
     protected $fillable = [
         'type',
+        'group_id',
         'name',
         'avatar',
         'created_by',
@@ -55,6 +56,14 @@ class Conversation extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * The group this conversation belongs to, if type === 'group'.
+     */
+    public function group()
+    {
+        return $this->belongsTo(Group::class);
     }
 
     /**

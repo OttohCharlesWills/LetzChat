@@ -11,7 +11,8 @@ use App\Http\Controllers\FollowController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\GroupPostModerationController;
-
+use App\Http\Controllers\GroupOwnershipController;
+use App\Http\Controllers\StickerController;
 Route::get('/', function () {
     return view('welcome');
 });
@@ -51,12 +52,22 @@ Route::middleware('auth')->prefix('friends')->name('friends.')->group(function (
 
 // CHAT ROUTES
 
+// Route::middleware('auth')->prefix('chat')->name('chat.')->group(function () {
+//     Route::get('/', [ChatController::class, 'index'])->name('index');
+//     Route::post('/start/{user}', [ChatController::class, 'startOrOpen'])->name('start');
+//     Route::get('/{conversation}', [ChatController::class, 'show'])->name('show');
+//     Route::post('/{conversation}/messages', [ChatController::class, 'sendMessage'])->name('send');
+// Route::post('/{conversation}/voice', [ChatController::class, 'sendVoiceNote'])->name('voice');
+// });
+
 Route::middleware('auth')->prefix('chat')->name('chat.')->group(function () {
     Route::get('/', [ChatController::class, 'index'])->name('index');
     Route::post('/start/{user}', [ChatController::class, 'startOrOpen'])->name('start');
     Route::get('/{conversation}', [ChatController::class, 'show'])->name('show');
     Route::post('/{conversation}/messages', [ChatController::class, 'sendMessage'])->name('send');
-Route::post('/{conversation}/voice', [ChatController::class, 'sendVoiceNote'])->name('voice');
+    Route::post('/{conversation}/voice', [ChatController::class, 'sendVoiceNote'])->name('voice');
+    Route::post('/{conversation}/image', [ChatController::class, 'sendImage'])->name('image');
+    Route::post('/{conversation}/sticker', [ChatController::class, 'sendSticker'])->name('sticker');
 });
 
 
@@ -116,6 +127,19 @@ Route::middleware('auth')->prefix('groups')->name('groups.')->group(function () 
     Route::post('/{group}/join', [GroupController::class, 'join'])->name('join');
     Route::post('/{group}/leave', [GroupController::class, 'leave'])->name('leave');
     Route::post('/{group}/cover', [GroupController::class, 'updateCoverPhoto'])->name('cover.update');
+});
+
+
+Route::middleware('auth')->get('/stickers', [StickerController::class, 'index'])->name('stickers.index');
+
+Route::middleware('auth')->group(function () {
+    Route::post('/groups/{group}/ownership/transfer', [GroupOwnershipController::class, 'transfer'])->name('groups.ownership.transfer');
+    Route::post('/groups/{group}/ownership/transfer/{transfer}/cancel', [GroupOwnershipController::class, 'cancel'])->name('groups.ownership.cancel');
+    Route::post('/ownership-transfers/{transfer}/accept', [GroupOwnershipController::class, 'accept'])->name('ownership-transfers.accept');
+    Route::post('/ownership-transfers/{transfer}/reject', [GroupOwnershipController::class, 'reject'])->name('ownership-transfers.reject');
+
+    Route::delete('/groups/{group}', [GroupController::class, 'destroy'])->name('groups.destroy');
+    Route::delete('/groups/{group}/members/{user}', [GroupController::class, 'removeMember'])->name('groups.members.remove');
 });
 
 Route::middleware('auth')->prefix('groups/{group}')->name('groups.')->group(function () {

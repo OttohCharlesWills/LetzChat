@@ -13,11 +13,19 @@ use Illuminate\Support\Facades\Broadcast;
 |
 */
 
+// Broadcast::channel('conversation.{conversationId}', function ($user, $conversationId) {
+//     return Conversation::where('id', $conversationId)
+//         ->whereHas('participants', function ($q) use ($user) {
+//             $q->where('user_id', $user->id)
+//               ->whereNull('conversation_participants.left_at');
+//         })
+//         ->exists();
+// });
+
 Broadcast::channel('conversation.{conversationId}', function ($user, $conversationId) {
-    return Conversation::where('id', $conversationId)
-        ->whereHas('participants', function ($q) use ($user) {
-            $q->where('user_id', $user->id)
-              ->whereNull('conversation_participants.left_at');
-        })
-        ->exists();
+    return \App\Models\Conversation::find($conversationId)
+        ?->participants()
+        ->where('user_id', $user->id)
+        ->wherePivotNull('left_at')
+        ->exists() ?? false;
 });
