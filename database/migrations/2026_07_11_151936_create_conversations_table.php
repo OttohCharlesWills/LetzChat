@@ -12,16 +12,16 @@ return new class extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
 
+            // 'private' = exactly 2 participants (a normal 1:1 DM)
+            // 'group'   = 3+ participants, has a name/avatar of its own
+            $table->enum('type', ['private', 'group'])->default('private');
+
+            // Only set for group chats — links back to the owning Group.
             $table->foreignId('group_id')
                 ->nullable()
                 ->unique()
-                ->after('type')
                 ->constrained('groups')
                 ->cascadeOnDelete();
-
-            // 'private' = exactly 2 participants (a normal 1:1 DM)
-            // 'group'   = 3+ participants, has a name/avatar of its own
-            $table->enum('type', ['private', 'group'])->default('public');
 
             // Only used for group chats
             $table->string('name')->nullable();
