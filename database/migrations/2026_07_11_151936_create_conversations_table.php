@@ -21,7 +21,7 @@ return new class extends Migration
 
             // 'private' = exactly 2 participants (a normal 1:1 DM)
             // 'group'   = 3+ participants, has a name/avatar of its own
-            $table->enum('type', ['private', 'group'])->default('private');
+            $table->enum('type', ['private', 'group'])->default('public');
 
             // Only used for group chats
             $table->string('name')->nullable();
