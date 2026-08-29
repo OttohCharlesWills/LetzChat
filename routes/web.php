@@ -70,7 +70,11 @@ Route::middleware('auth')->prefix('chat')->name('chat.')->group(function () {
     Route::post('/{conversation}/sticker', [ChatController::class, 'sendSticker'])->name('sticker');
 });
 
-Route::get('/groups/{group}/chat', [ChatController::class, 'openGroupChat'])->name('chat');
+Route::middleware('auth')->prefix('groups')->name('groups.')->group(function () {
+    // ...your existing group routes (index, create, store, show, join, leave, settings, etc.)...
+
+    Route::get('/{group}/chat', [ChatController::class, 'openGroupChat'])->name('chat');
+});
 
 
 // POST ROUTES 
