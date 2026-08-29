@@ -99,12 +99,15 @@ class ChatController extends Controller
      * exactly like `show()` — this is what the "Chat" tab inside a
      * group should point to.
      */
-    public function openGroupChat(Request $request, Group $group)
+        public function openGroupChat(Request $request, Group $group)
     {
         $userId = Auth::id();
         $user = Auth::user();
 
-        abort_unless($group->isMember($user), 403);
+        $isMember = $group->isMember($user);
+        $isAdmin = $isMember && $group->isAdmin($user);
+
+        abort_unless($isMember, 403);
 
         $conversation = $group->getOrCreateConversation();
 
@@ -135,6 +138,8 @@ class ChatController extends Controller
             'messages'     => $messages,
             'otherUser'    => null,
             'group'        => $group,
+            'isMember'     => $isMember,
+            'isAdmin'      => $isAdmin,
         ]);
     }
 
