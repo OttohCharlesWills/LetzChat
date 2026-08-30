@@ -1,6 +1,6 @@
-{{-- @extends('layouts.app')
+@extends('layouts.settingapp')
 
-@section('content') --}}
+@section('content')
 <div class="st-page container">
 
     <div class="st-sidebar">
@@ -194,4 +194,4 @@
     });
 })();
 </script>
-{{-- @endsection --}}
+@endsection
