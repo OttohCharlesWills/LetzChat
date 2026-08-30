@@ -194,4 +194,4 @@
     });
 })();
 </script>
-@endsection
+{{-- @endsection --}}
