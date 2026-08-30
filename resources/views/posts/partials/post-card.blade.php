@@ -85,7 +85,8 @@
         @endif
     </div>
 
-    <div class="pc-body">{{ $post->body }}</div>
+    {{-- <div class="pc-body">{{ $post->body }}</div> --}}
+    <div class="pc-body">{!! $post->bodyHtml() !!}</div>
 
     @if ($post->images->isNotEmpty())
         <div class="pc-images pc-images-count-{{ min($post->images->count(), 5) }}">
@@ -227,6 +228,16 @@
             overflow: hidden;
             cursor: pointer;
             background: var(--pc-hover);
+        }
+
+        .pc-hashtag-link {
+            color: #0d6efd;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .pc-hashtag-link:hover {
+            text-decoration: underline;
         }
 
         .pc-image-item img {

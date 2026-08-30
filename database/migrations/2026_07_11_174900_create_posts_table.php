@@ -50,10 +50,24 @@ return new class extends Migration
             $table->unsignedInteger('comments_count')->default(0);
             $table->unsignedInteger('shares_count')->default(0);
 
+            // 'published' -> visible as normal (default for all non-group
+            //                posts, and group posts that don't need approval)
+            // 'pending'   -> awaiting admin/moderator review, hidden from feed
+            // Rejected posts are simply deleted per your spec, so no
+            // 'rejected' state needs to persist.
+            $table->enum('status', ['published', 'pending'])->default('published');
+
+            // Flagged posts stay visible (flag = review, block = reject
+            // outright at creation) but get tagged for the admin queue.
+            $table->boolean('is_flagged')->default(false);
+            $table->json('flagged_words')->nullable();
+
             $table->timestamps();
             $table->softDeletes();
 
             $table->index(['user_id', 'created_at']);
+            $table->index(['group_id', 'status']);
+            $table->index('is_flagged');
         });
     }
 

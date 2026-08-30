@@ -13,6 +13,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\GroupPostModerationController;
 use App\Http\Controllers\GroupOwnershipController;
 use App\Http\Controllers\StickerController;
+use App\Http\Controllers\SettingsController;
 Route::get('/', function () {
     return view('welcome');
 });
@@ -75,6 +76,21 @@ Route::middleware('auth')->prefix('groups')->name('groups.')->group(function () 
 
     Route::get('/{group}/chat', [ChatController::class, 'openGroupChat'])->name('chat');
 });
+
+Route::middleware('auth')->get('/hashtag/{hashtag}', [HashtagController::class, 'show'])->name('hashtags.show');
+
+
+Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/flagged-posts', [\App\Http\Controllers\Admin\FlaggedPostController::class, 'index'])->name('flagged-posts.index');
+    Route::post('/flagged-posts/{post}/dismiss', [\App\Http\Controllers\Admin\FlaggedPostController::class, 'dismiss'])->name('flagged-posts.dismiss');
+    Route::delete('/flagged-posts/{post}', [\App\Http\Controllers\Admin\FlaggedPostController::class, 'removePost'])->name('flagged-posts.remove');
+
+    Route::get('/banned-words', [\App\Http\Controllers\Admin\BannedWordController::class, 'index'])->name('banned-words.index');
+    Route::post('/banned-words', [\App\Http\Controllers\Admin\BannedWordController::class, 'store'])->name('banned-words.store');
+    Route::delete('/banned-words/{bannedWord}', [\App\Http\Controllers\Admin\BannedWordController::class, 'destroy'])->name('banned-words.destroy');
+});
+
+Route::middleware('auth')->get('/settings', [SettingsController::class, 'index'])->name('settings.index');
 
 
 // POST ROUTES 

@@ -60,6 +60,7 @@ return new class extends Migration
             // Account Status
             $table->boolean('is_active')->default(true);
             $table->boolean('is_banned')->default(false);
+            $table->boolean('is_admin')->default(false);
  
             // Presence
             $table->boolean('is_online')->default(false);

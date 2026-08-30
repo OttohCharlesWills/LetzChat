@@ -74,6 +74,9 @@
                     <a href="{{ route('profile.show', auth()->user()->uuid) }}" class="nb-dropdown-item">
                         {{ __('View Profile') }}
                     </a>
+                    <a href="{{ route('settings.index') }}" class="nb-dropdown-item">
+                        {{ __('Settings') }}
+                    </a>
                     <a href="{{ route('logout') }}" class="nb-dropdown-item"
                        onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                         {{ __('Logout') }}

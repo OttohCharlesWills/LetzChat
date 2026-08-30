@@ -8,10 +8,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use App\Models\PostImage;
+use App\Models\Concerns\HasHashtags;
+
 
 class Post extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasHashtags;
 
     protected $fillable = [
         'user_id',
@@ -41,6 +43,20 @@ class Post extends Model
         static::creating(function ($post) {
             $post->uuid = (string) Str::uuid();
         });
+    }
+
+        public function scopeFlagged($query)
+    {
+        return $query->where('is_flagged', true);
+    }
+
+        /**
+     * Post body with #hashtags rendered as clickable links, HTML-escaped
+     * everywhere else. Use this in views instead of raw $post->body.
+     */
+    public function bodyHtml(): string
+    {
+        return app(\App\Services\HashtagService::class)->linkify($this->body ?? '');
     }
 
     /**
