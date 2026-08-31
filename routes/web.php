@@ -14,6 +14,7 @@ use App\Http\Controllers\GroupPostModerationController;
 use App\Http\Controllers\GroupOwnershipController;
 use App\Http\Controllers\StickerController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\HashtagController;
 Route::get('/', function () {
     return view('welcome');
 });
