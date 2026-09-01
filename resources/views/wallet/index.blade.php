@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.adapp')
 
 @section('content')
 <div class="container" style="max-width: 640px;">
@@ -46,4 +46,4 @@
     @endif
 
 </div>
-@endsections
+@endsection
