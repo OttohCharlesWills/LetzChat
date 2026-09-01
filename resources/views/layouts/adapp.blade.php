@@ -79,7 +79,7 @@
                 <div class="row">
 
                     <aside class="col-lg-3 d-none d-lg-block sidebar-col">
-                        @include('includes.adssidebar')
+                        @include('includes.dashboardsidebar')
                     </aside>
 
                     <section class="col-12 col-lg-9 content-col">

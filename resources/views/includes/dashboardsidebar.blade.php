@@ -25,6 +25,21 @@
         </button>
     </div>
 
+    {{-- ---- Ads ---- --}}
+    <button type="button" class="db-group-toggle {{ request()->is('ads*', 'wallet*') ? '' : 'collapsed' }}" data-target="dbGroupAds">
+        <i class="bi bi-megaphone-fill"></i>
+        <span>{{ __('Ads') }}</span>
+        <i class="bi bi-chevron-down db-chevron"></i>
+    </button>
+    <div class="db-group {{ request()->is('ads*', 'wallet*') ? '' : 'collapsed' }}" id="dbGroupAds">
+        <a href="{{ url('/ads') }}" class="db-subitem {{ request()->is('ads*') ? 'active' : '' }}">
+            <i class="bi bi-megaphone-fill"></i> {{ __('Your Ads') }}
+        </a>
+        <a href="{{ url('/wallet') }}" class="db-subitem {{ request()->is('wallet*') ? 'active' : '' }}">
+            <i class="bi bi-wallet2"></i> {{ __('Wallet') }}
+        </a>
+    </div>
+
     {{-- ---- Content ---- --}}
     <button type="button" class="db-group-toggle" data-target="dbGroupContent">
         <i class="bi bi-grid-fill"></i>
@@ -69,6 +84,7 @@
             <i class="bi bi-clock-history"></i> {{ __('Activity log') }}
         </button>
     </div>
+
 
     <div class="db-divider"></div>
 
