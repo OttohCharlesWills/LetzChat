@@ -49,12 +49,12 @@ class DashboardController extends Controller
             [
                 'label' => __('Upload a profile picture'),
                 'done'  => (bool) $user->profile_photo,
-                'route' => route('settings.index'),
+                'route' => route('profile.show'),
             ],
             [
                 'label' => __('Upload a cover photo'),
                 'done'  => (bool) $user->cover_photo,
-                'route' => route('settings.index'),
+                'route' => route('profile.show'),
             ],
             [
                 'label' => __('Join a group'),
