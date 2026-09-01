@@ -15,6 +15,9 @@ use App\Http\Controllers\GroupOwnershipController;
 use App\Http\Controllers\StickerController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\HashtagController;
+use App\Http\Controllers\DashboardController;
+
+
 Route::get('/', function () {
     return view('welcome');
 });
@@ -112,7 +115,7 @@ Route::delete('/comments/{comment}', [PostController::class, 'destroyComment'])-
 Route::post('/comments/{comment}/react', [PostController::class, 'reactComment'])->name('comments.react');
 
 Route::post('/posts/{post}/videos', [PostController::class, 'storeVideo'])->name('posts.videos.store');
-
+Route::middleware('auth')->post('/posts/{post}/view', [PostController::class, 'recordView'])->name('posts.view');
 
 
 // PROFILE ROUTE LAST ROUTES
@@ -121,6 +124,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
 });
+
+
+Route::middleware('auth')->get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
+
+
+
 
 
 // ROUTES FOR FOLLOWERS

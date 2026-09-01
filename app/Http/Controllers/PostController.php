@@ -436,6 +436,42 @@ class PostController extends Controller
         ]);
     }
 
+        /**
+     * Record that a post was seen. Fired by a beacon in post-card.blade.js
+     * once per card, per page load (IntersectionObserver). Deduped so the
+     * same viewer can't inflate a post's count by refreshing repeatedly —
+     * one view per viewer per post per day.
+     */
+    public function recordView(Request $request, Post $post)
+    {
+        $viewerId = $request->user()->id;
+
+        if ($post->user_id === $viewerId) {
+            return response()->json(['recorded' => false]); // owners viewing their own post don't count
+        }
+
+        $alreadyViewedToday = \App\Models\UserActivity::where('user_id', $viewerId)
+            ->where('event_name', 'post_view')
+            ->whereDate('created_at', now()->toDateString())
+            ->whereJsonContains('metadata->post_id', $post->id)
+            ->exists();
+
+        if ($alreadyViewedToday) {
+            return response()->json(['recorded' => false]);
+        }
+
+        $post->increment('views_count');
+
+        \App\Models\UserActivity::create([
+            'user_id'    => $viewerId,
+            'event_name' => 'post_view',
+            'context'    => 'feed',
+            'metadata'   => ['post_id' => $post->id],
+        ]);
+
+        return response()->json(['recorded' => true]);
+    }
+
     public function destroyComment(Request $request, Comment $comment)
     {
         abort_unless($comment->user_id === $request->user()->id, 403);

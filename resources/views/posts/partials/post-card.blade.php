@@ -875,7 +875,6 @@
             outline: none;
         }
     </style>
-
     <script>
         // GUARD: Turbo re-executes inline scripts on every page navigation
         // without a full reload. Without this guard, every navigation stacks
@@ -905,6 +904,45 @@
             document.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape') lightbox.classList.remove('active');
             });
+
+            // ---- View tracking: fire once per card, when it's actually scrolled into view ----
+            if ('IntersectionObserver' in window) {
+                const viewObserver = new IntersectionObserver((entries) => {
+                    entries.forEach((entry) => {
+                        if (!entry.isIntersecting) return;
+
+                        const card = entry.target;
+                        if (card.dataset.viewLogged) return;
+                        card.dataset.viewLogged = '1';
+
+                        fetch(`/posts/${card.dataset.postId}/view`, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                            },
+                        }).catch(() => {});
+
+                        viewObserver.unobserve(card);
+                    });
+                }, { threshold: 0.5 }); // counts once at least half the card is visible
+
+                document.querySelectorAll('.pc-card').forEach((card) => viewObserver.observe(card));
+
+                // New cards appended later (infinite scroll, new post prepended) need
+                // observing too — watch the DOM for additions.
+                const bodyObserver = new MutationObserver((mutations) => {
+                    mutations.forEach((m) => {
+                        m.addedNodes.forEach((node) => {
+                            if (node.nodeType !== 1) return;
+                            if (node.classList?.contains('pc-card')) viewObserver.observe(node);
+                            node.querySelectorAll?.('.pc-card').forEach((card) => viewObserver.observe(card));
+                        });
+                    });
+                });
+                bodyObserver.observe(document.body, { childList: true, subtree: true });
+            }
 
             (function () {
                 const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');

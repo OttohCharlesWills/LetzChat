@@ -28,6 +28,7 @@ return new class extends Migration
             $table->uuid('uuid')->unique();
 
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->unsignedInteger('views_count')->default(0)->after('shares_count');
 
             // Text content for now. You'll add an `image` (or `image_path`)
             // column later — keep it nullable since a post could eventually
