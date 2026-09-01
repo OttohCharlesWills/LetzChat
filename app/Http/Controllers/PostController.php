@@ -65,7 +65,17 @@ class PostController extends Controller
             ->orderByDesc('created_at')
             ->paginate(10);
 
-        return view('posts.index', compact('posts'));
+        $ads = collect();
+
+        if ($request->get('page', 1) == 1) {
+            $ads = app(\App\Services\AdService::class)->pickAdsFor($viewer, 2);
+
+            $ads->each(function ($ad) use ($viewer) {
+                app(\App\Services\AdService::class)->recordImpression($ad, $viewer);
+            });
+        }
+
+        return view('posts.index', compact('posts', 'ads'));
     }
 
     /**

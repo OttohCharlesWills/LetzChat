@@ -16,6 +16,8 @@ use App\Http\Controllers\StickerController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\HashtagController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\WalletController;
+use App\Http\Controllers\AdController;
 
 
 Route::get('/', function () {
@@ -128,6 +130,20 @@ Route::middleware('auth')->group(function () {
 
 Route::middleware('auth')->get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
 
+Route::middleware('auth')->prefix('ads')->name('ads.')->group(function () {
+    Route::get('/', [AdController::class, 'index'])->name('index');
+    Route::get('/create', [AdController::class, 'create'])->name('create');
+    Route::post('/', [AdController::class, 'store'])->name('store');
+    Route::get('/{ad}', [AdController::class, 'show'])->name('show');
+    Route::post('/{ad}/pause', [AdController::class, 'pause'])->name('pause');
+    Route::post('/{ad}/resume', [AdController::class, 'resume'])->name('resume');
+    Route::post('/{ad}/click', [AdController::class, 'recordClick'])->name('click');
+});
+
+Route::middleware('auth')->prefix('wallet')->name('wallet.')->group(function () {
+    Route::get('/', [WalletController::class, 'index'])->name('index');
+    Route::post('/topup', [WalletController::class, 'topUp'])->name('topup');
+});
 
 
 

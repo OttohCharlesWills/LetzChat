@@ -105,9 +105,19 @@
     @include('posts.partials.create-post-modal')
 
     <div id="feedPostsList">
-        @foreach ($posts as $post)
+        @php $adIndex = 0; @endphp
+        @forelse ($posts as $post)
             @include('posts.partials.post-card', ['post' => $post])
-        @endforeach
+
+            @if ($loop->iteration % 4 === 0 && isset($ads[$adIndex]))
+                @include('ads.partials.ad-card', ['ad' => $ads[$adIndex]])
+                @php $adIndex++; @endphp
+            @endif
+        @empty
+            <div class="pc-empty-state text-center py-5">
+                <p class="text-muted mb-0">{{ __('No posts to show yet.') }}</p>
+            </div>
+        @endforelse
     </div>
 
     @include('posts.partials.feed-scripts')

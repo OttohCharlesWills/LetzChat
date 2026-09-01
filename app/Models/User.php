@@ -58,6 +58,11 @@ class User extends Authenticatable
         return 'uuid';
     }
 
+        public function ads()
+    {
+        return $this->hasMany(Ad::class);
+    }
+
     /**
      * The attributes that should be hidden for serialization.
      *
