@@ -106,7 +106,7 @@ class AdService
 
     public function resumeAd(Ad $ad): void
     {
-        abort_if(now()->toDateString() > $ad->end_date->toDateString(), 422, 'This ad\'s end date has already passed.');
+        abort_if(now()->toDateString() > $ad->end_at->toDateString(), 422, 'This ad\'s end date has already passed.');
         abort_if($ad->remainingBudget() <= 0, 422, 'This ad has no remaining budget.');
 
         $ad->update(['status' => 'active']);
