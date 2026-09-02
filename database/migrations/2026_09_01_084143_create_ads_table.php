@@ -18,15 +18,15 @@ return new class extends Migration
             // draft     -> created but not yet running (not used yet, reserved for scheduling later)
             // active    -> currently eligible to be shown
             // paused    -> advertiser paused it manually
-            // completed -> budget exhausted or end_date passed
+            // completed -> budget exhausted or end_at passed
             $table->enum('status', ['draft', 'active', 'paused', 'completed'])->default('active');
 
             $table->decimal('budget', 12, 2);       // total prepaid budget, escrowed on creation
             $table->decimal('spent', 12, 2)->default(0);
             $table->decimal('cost_per_impression', 8, 4)->default(0.5); // flat CPM-style cost, NGN per impression
 
-            $table->date('start_date');
-            $table->date('end_date');
+            $table->timestamp('start_at');
+            $table->timestamp('end_at');
 
             // Targeting — all nullable = "no restriction on this dimension"
             $table->unsignedTinyInteger('target_min_age')->nullable();
@@ -39,7 +39,7 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->index(['status', 'end_date']);
+            $table->index(['status', 'end_at']);
         });
     }
 

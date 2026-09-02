@@ -36,7 +36,7 @@ class AdController extends Controller
     /**
      * Boost form — pick from the user's own published, non-flagged posts.
      */
-    public function create(Request $request)
+        public function create(Request $request)
     {
         $boostablePosts = $request->user()->posts()
             ->where('status', 'published')
@@ -46,7 +46,10 @@ class AdController extends Controller
 
         $wallet = $this->walletService->walletFor($request->user());
 
-        return view('ads.create', compact('boostablePosts', 'wallet'));
+        $costPerImpression = 0.5; // matches the default on the Ad model/migration
+        $impressionsPerHour = \App\Services\AdService::ESTIMATED_IMPRESSIONS_PER_HOUR;
+
+        return view('ads.create', compact('boostablePosts', 'wallet', 'costPerImpression', 'impressionsPerHour'));
     }
 
     public function store(Request $request)
@@ -54,8 +57,8 @@ class AdController extends Controller
         $validated = $request->validate([
             'post_id'           => ['required', 'exists:posts,id'],
             'budget'            => ['required', 'numeric', 'min:100'],
-            'start_date'        => ['required', 'date', 'after_or_equal:today'],
-            'end_date'          => ['required', 'date', 'after:start_date'],
+            'start_at'          => ['required', 'date', 'after_or_equal:now'],
+            'end_at'            => ['required', 'date', 'after:start_at'],
             'target_min_age'    => ['nullable', 'integer', 'min:13', 'max:100'],
             'target_max_age'    => ['nullable', 'integer', 'min:13', 'max:100', 'gte:target_min_age'],
             'target_gender'     => ['required', 'in:any,male,female'],
@@ -79,8 +82,8 @@ class AdController extends Controller
                     'post_id'            => $post->id,
                     'status'             => 'active',
                     'budget'             => $validated['budget'],
-                    'start_date'         => $validated['start_date'],
-                    'end_date'           => $validated['end_date'],
+                    'start_at'           => $validated['start_at'],
+                    'end_at'             => $validated['end_at'],
                     'target_min_age'     => $validated['target_min_age'] ?? null,
                     'target_max_age'     => $validated['target_max_age'] ?? null,
                     'target_gender'      => $validated['target_gender'],

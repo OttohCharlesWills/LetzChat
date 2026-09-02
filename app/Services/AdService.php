@@ -12,6 +12,33 @@ class AdService
     {
     }
 
+        /**
+     * Rough estimate of how many ad impressions the whole platform serves
+     * per hour, on average. Purely a planning estimate for the advertiser's
+     * budget/duration calculator — actual serving is always governed by
+     * real traffic and stops the moment the budget is spent, whichever
+     * comes first. Revisit this number periodically as real usage data
+     * comes in (the same user_activities table backing this could later
+     * compute a rolling real average instead of a hardcoded guess).
+     */
+    public const ESTIMATED_IMPRESSIONS_PER_HOUR = 50;
+
+    public function estimatedHoursForBudget(float $budget, float $costPerImpression): float
+    {
+        if ($costPerImpression <= 0) {
+            return 0;
+        }
+
+        $affordableImpressions = $budget / $costPerImpression;
+
+        return round($affordableImpressions / self::ESTIMATED_IMPRESSIONS_PER_HOUR, 1);
+    }
+
+    public function estimatedBudgetForHours(float $hours, float $costPerImpression): float
+    {
+        return round($hours * self::ESTIMATED_IMPRESSIONS_PER_HOUR * $costPerImpression, 2);
+    }
+
     /**
      * Pick up to $count active ads eligible for this viewer. Random
      * selection among eligible ads — no auction/bidding, kept simple.

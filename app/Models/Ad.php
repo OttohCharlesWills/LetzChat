@@ -21,8 +21,8 @@ class Ad extends Model
         'budget'               => 'decimal:2',
         'spent'                => 'decimal:2',
         'cost_per_impression'  => 'decimal:4',
-        'start_date'           => 'date',
-        'end_date'             => 'date',
+        'start_at'             => 'datetime',
+        'end_at'               => 'datetime',
         'target_locations'     => 'array',
     ];
 
@@ -53,14 +53,13 @@ class Ad extends Model
         return (float) $this->budget - (float) $this->spent;
     }
 
-    public function isEligibleFor(User $viewer): bool
+        public function isEligibleFor(User $viewer): bool
     {
         if ($this->status !== 'active') {
             return false;
         }
 
-        if (now()->toDateString() < $this->start_date->toDateString()
-            || now()->toDateString() > $this->end_date->toDateString()) {
+        if (now()->lt($this->start_at) || now()->gt($this->end_at)) {
             return false;
         }
 
@@ -74,7 +73,7 @@ class Ad extends Model
 
         if ($this->target_min_age || $this->target_max_age) {
             if (! $viewer->date_of_birth) {
-                return false; // can't verify age, exclude to be safe
+                return false;
             }
 
             $age = $viewer->date_of_birth->age;
