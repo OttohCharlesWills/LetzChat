@@ -143,7 +143,11 @@ Route::middleware('auth')->prefix('ads')->name('ads.')->group(function () {
 Route::middleware('auth')->prefix('wallet')->name('wallet.')->group(function () {
     Route::get('/', [WalletController::class, 'index'])->name('index');
     Route::post('/topup', [WalletController::class, 'topUp'])->name('topup');
+    Route::get('/callback', [WalletController::class, 'callback'])->name('callback');
 });
+
+// No 'auth' middleware — Paystack's server calls this directly, not a logged-in browser.
+Route::post('/wallet/webhook/paystack', [WalletController::class, 'webhook'])->name('wallet.webhook');
 
 
 

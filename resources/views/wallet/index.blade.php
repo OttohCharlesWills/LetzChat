@@ -12,14 +12,18 @@
         <div class="fs-2 fw-bold">{{ number_format($wallet->balance, 2) }} {{ $wallet->currency }}</div>
     </div>
 
+    @if ($errors->any())
+        <div class="alert alert-danger">{{ $errors->first() }}</div>
+    @endif
+
     <div class="pc-card mb-3">
         <p class="fw-bold mb-2">{{ __('Top up') }}</p>
-        <p class="text-muted small">{{ __('Payment gateway integration coming soon — this credits your wallet directly for now.') }}</p>
+        <p class="text-muted small">{{ __('You will be redirected to Paystack to complete payment securely.') }}</p>
 
         <form method="POST" action="{{ route('wallet.topup') }}" class="d-flex gap-2">
             @csrf
-            <input type="number" name="amount" class="form-control" min="100" step="1" placeholder="{{ __('Amount') }}" required>
-            <button type="submit" class="btn btn-primary">{{ __('Top up') }}</button>
+            <input type="number" name="amount" class="form-control" min="100" step="1" placeholder="{{ __('Amount (NGN)') }}" required>
+            <button type="submit" class="btn btn-primary">{{ __('Top up with Paystack') }}</button>
         </form>
     </div>
 

@@ -2,14 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\PaystackService;
 use App\Services\WalletService;
 use Illuminate\Http\Request;
 
 class WalletController extends Controller
 {
-    public function __construct(protected WalletService $walletService)
-    {
-        $this->middleware('auth');
+    public function __construct(
+        protected WalletService $walletService,
+        protected PaystackService $paystack
+    ) {
+        $this->middleware('auth')->except(['webhook']);
     }
 
     public function index(Request $request)
@@ -21,10 +24,8 @@ class WalletController extends Controller
     }
 
     /**
-     * Placeholder top-up — credits the wallet directly. Swap this for a
-     * real Paystack/Flutterwave charge-and-verify flow when payment
-     * processing is wired in; the WalletService::topUp() call underneath
-     * stays the same either way.
+     * Start a real Paystack payment — redirects the user to Paystack's
+     * hosted checkout page.
      */
     public function topUp(Request $request)
     {
@@ -32,8 +33,79 @@ class WalletController extends Controller
             'amount' => ['required', 'numeric', 'min:100', 'max:1000000'],
         ]);
 
-        $this->walletService->topUp($request->user(), $validated['amount']);
+        try {
+            $result = $this->paystack->initialize($request->user(), $validated['amount']);
+        } catch (\RuntimeException $e) {
+            return back()->withErrors(['amount' => $e->getMessage()]);
+        }
 
-        return back()->with('status', __('Wallet topped up.'));
+        return redirect()->away($result['authorization_url']);
+    }
+
+    /**
+     * Paystack redirects the user's browser back here after they pay (or
+     * cancel). We re-verify server-side rather than trusting the redirect
+     * itself — the webhook is the real source of truth, but we also try
+     * to credit here so the user sees their balance update immediately
+     * instead of waiting on the webhook to arrive.
+     */
+    public function callback(Request $request)
+    {
+        $reference = $request->query('reference');
+
+        if (! $reference) {
+            return redirect()->route('wallet.index')->with('status', __('Payment reference missing.'));
+        }
+
+        try {
+            $data = $this->paystack->verify($reference);
+        } catch (\RuntimeException $e) {
+            return redirect()->route('wallet.index')->with('status', __('Could not confirm payment. If you were charged, it will reflect shortly.'));
+        }
+
+        if (($data['status'] ?? null) !== 'success') {
+            return redirect()->route('wallet.index')->with('status', __('Payment was not successful.'));
+        }
+
+        $amountInNaira = $data['amount'] / 100;
+        $credited = $this->walletService->creditFromPaystackReference($request->user(), $reference, $amountInNaira);
+
+        return redirect()->route('wallet.index')->with('status', $credited
+            ? __('Payment successful! Your wallet has been credited.')
+            : __('Payment already processed.'));
+    }
+
+    /**
+     * Server-to-server confirmation from Paystack. This is the real source
+     * of truth — no auth middleware (Paystack isn't logged in as anyone),
+     * and CSRF is excluded for this route (see VerifyCsrfToken::$except).
+     */
+    public function webhook(Request $request)
+    {
+        $signature = $request->header('x-paystack-signature');
+        $payload = $request->getContent();
+
+        if (! $this->paystack->verifyWebhookSignature($payload, $signature)) {
+            return response()->json(['message' => 'Invalid signature'], 400);
+        }
+
+        $event = $request->input('event');
+
+        if ($event === 'charge.success') {
+            $data = $request->input('data');
+            $reference = $data['reference'] ?? null;
+            $userId = $data['metadata']['user_id'] ?? null;
+
+            if ($reference && $userId) {
+                $user = \App\Models\User::find($userId);
+
+                if ($user) {
+                    $amountInNaira = $data['amount'] / 100;
+                    $this->walletService->creditFromPaystackReference($user, $reference, $amountInNaira);
+                }
+            }
+        }
+
+        return response()->json(['message' => 'ok']);
     }
 }

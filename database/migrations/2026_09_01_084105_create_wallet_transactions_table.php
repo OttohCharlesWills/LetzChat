@@ -24,7 +24,7 @@ return new class extends Migration
 
             $table->foreignId('ad_id')->nullable()->constrained()->nullOnDelete();
 
-            $table->string('reference')->nullable(); // for a future payment gateway's transaction ref
+            $table->unique('reference')->nullable(); // for a future payment gateway's transaction ref
             $table->text('description')->nullable();
 
             $table->timestamps();

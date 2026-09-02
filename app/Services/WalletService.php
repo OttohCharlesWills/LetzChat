@@ -93,4 +93,26 @@ class WalletService
             ]);
         });
     }
+
+        /**
+     * Credit a wallet from a confirmed Paystack transaction. Safe to call
+     * twice for the same reference (webhook + callback both fire) — the
+     * unique constraint on wallet_transactions.reference makes the second
+     * call a no-op instead of double-crediting.
+     */
+    public function creditFromPaystackReference(User $user, string $reference, float $amountInNaira): bool
+    {
+        if (WalletTransaction::where('reference', $reference)->exists()) {
+            return false; // already processed
+        }
+
+        try {
+            $this->topUp($user, $amountInNaira, $reference);
+            return true;
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Race condition: webhook and callback landed at the same instant.
+            // The unique index caught it — treat as already-processed, not an error.
+            return false;
+        }
+    }
 }

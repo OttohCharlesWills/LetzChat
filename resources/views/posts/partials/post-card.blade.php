@@ -112,7 +112,16 @@
                         default => 'video/mp4',
                     };
                 @endphp
-                <video class="pc-video" controls preload="metadata" playsinline>
+                <video
+                    class="pc-video"
+                    controls
+                    preload="metadata"
+                    playsinline
+                    controlsList="nodownload noremoteplayback"
+                    disablePictureInPicture
+                    disableRemotePlayback
+                    oncontextmenu="return false;"
+                >
                     <source src="{{ $video->url() }}" type="{{ $mime }}">
                     {{ __('Your browser does not support the video tag.') }}
                 </video>
