@@ -140,10 +140,15 @@ Route::middleware('auth')->prefix('ads')->name('ads.')->group(function () {
     Route::post('/{ad}/click', [AdController::class, 'recordClick'])->name('click');
 });
 
+// Route::middleware('auth')->prefix('wallet')->name('wallet.')->group(function () {
+//     Route::get('/', [WalletController::class, 'index'])->name('index');
+//     Route::post('/topup', [WalletController::class, 'topUp'])->name('topup');
+//     Route::get('/callback', [WalletController::class, 'callback'])->name('callback');
+// });
+
 Route::middleware('auth')->prefix('wallet')->name('wallet.')->group(function () {
     Route::get('/', [WalletController::class, 'index'])->name('index');
-    Route::post('/topup', [WalletController::class, 'topUp'])->name('topup');
-    Route::get('/callback', [WalletController::class, 'callback'])->name('callback');
+    Route::post('/verify', [WalletController::class, 'verify'])->name('verify');
 });
 
 // No 'auth' middleware — Paystack's server calls this directly, not a logged-in browser.

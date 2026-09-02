@@ -108,4 +108,40 @@ class WalletController extends Controller
 
         return response()->json(['message' => 'ok']);
     }
+
+        /**
+     * Called by the inline popup's JS callback after payment completes.
+     * Re-verifies with Paystack server-side (never trust the popup's
+     * "success" callback alone) before crediting the wallet.
+     */
+    public function verify(Request $request)
+    {
+        $validated = $request->validate([
+            'reference' => ['required', 'string'],
+        ]);
+
+        try {
+            $data = $this->paystack->verify($validated['reference']);
+        } catch (\RuntimeException $e) {
+            return response()->json(['credited' => false, 'message' => __('Could not verify payment.')], 422);
+        }
+
+        if (($data['status'] ?? null) !== 'success') {
+            return response()->json(['credited' => false, 'message' => __('Payment was not successful.')], 422);
+        }
+
+        $amountInNaira = $data['amount'] / 100;
+        $credited = $this->walletService->creditFromPaystackReference(
+            $request->user(),
+            $validated['reference'],
+            $amountInNaira
+        );
+
+        return response()->json([
+            'credited' => $credited,
+            'message'  => $credited
+                ? __('Wallet credited successfully!')
+                : __('This payment was already processed.'),
+        ]);
+    }
 }
