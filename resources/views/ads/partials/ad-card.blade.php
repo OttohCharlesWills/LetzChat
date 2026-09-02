@@ -43,5 +43,43 @@ document.addEventListener('click', function (e) {
         },
     }).catch(() => {});
 });
+
+const seenAds = new Set();
+
+const adImpressionObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+
+        const el = entry.target;
+        const adUuid = el.dataset.adId;
+
+        if (!adUuid || seenAds.has(adUuid)) return;
+        seenAds.add(adUuid);
+
+        fetch(`/ads/${adUuid}/impression`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            },
+        }).catch(() => {});
+
+        adImpressionObserver.unobserve(el);
+    });
+}, { threshold: 0.6 });
+
+function observeAdCards(root = document) {
+    root.querySelectorAll('.pc-card[data-ad-id]').forEach((el) => {
+        if (!seenAds.has(el.dataset.adId)) {
+            adImpressionObserver.observe(el);
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => observeAdCards());
+
+// If your feed loads more posts dynamically (infinite scroll), call
+// observeAdCards() again after new content is appended to the DOM.
 </script>
 @endonce

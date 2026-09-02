@@ -47,15 +47,29 @@ class AdService
     {
         return Ad::with(['post.user', 'post.images', 'post.videos'])
             ->where('status', 'active')
-            ->whereDate('start_date', '<=', now())
-            ->whereDate('end_date', '>=', now())
+            ->where('start_at', '<=', now())
+            ->where('end_at', '>=', now())
             ->whereColumn('spent', '<', 'budget')
             ->inRandomOrder()
-            ->limit(20) // pull a pool, then filter precisely in PHP (gender/age/location aren't cleanly indexable together)
+            ->limit(20)
             ->get()
             ->filter(fn (Ad $ad) => $ad->isEligibleFor($viewer))
             ->take($count)
             ->values();
+    }
+
+    
+
+    public function recordClick(Ad $ad, User $viewer): void
+    {
+        $ad->increment('clicks_count');
+
+        UserActivity::create([
+            'user_id'    => $viewer->id,
+            'event_name' => 'ad_click',
+            'context'    => 'feed',
+            'metadata'   => ['ad_id' => $ad->id, 'post_id' => $ad->post_id],
+        ]);
     }
 
     /**
@@ -79,18 +93,6 @@ class AdService
         if ($ad->remainingBudget() < (float) $ad->cost_per_impression) {
             $this->completeAd($ad);
         }
-    }
-
-    public function recordClick(Ad $ad, User $viewer): void
-    {
-        $ad->increment('clicks_count');
-
-        UserActivity::create([
-            'user_id'    => $viewer->id,
-            'event_name' => 'ad_click',
-            'context'    => 'feed',
-            'metadata'   => ['ad_id' => $ad->id, 'post_id' => $ad->post_id],
-        ]);
     }
 
     public function completeAd(Ad $ad): void

@@ -138,6 +138,7 @@ Route::middleware('auth')->prefix('ads')->name('ads.')->group(function () {
     Route::post('/{ad}/pause', [AdController::class, 'pause'])->name('pause');
     Route::post('/{ad}/resume', [AdController::class, 'resume'])->name('resume');
     Route::post('/{ad}/click', [AdController::class, 'recordClick'])->name('click');
+    Route::post('/{ad}/impression', [AdController::class, 'recordImpression'])->name('impression');
 });
 
 // Route::middleware('auth')->prefix('wallet')->name('wallet.')->group(function () {
