@@ -10,12 +10,11 @@ class Ad extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'user_id', 'post_id', 'status', 'budget', 'spent', 'cost_per_impression',
-        'start_date', 'end_date',
-        'target_min_age', 'target_max_age', 'target_gender', 'target_locations',
-        'impressions_count', 'clicks_count',
-    ];
+protected $fillable = [
+    'user_id', 'post_id', 'status', 'budget', 'spent', 'cost_per_impression',
+    'start_at', 'end_at', 'target_min_age', 'target_max_age',
+    'target_gender', 'target_locations',
+];
 
     protected $casts = [
         'budget'               => 'decimal:2',
