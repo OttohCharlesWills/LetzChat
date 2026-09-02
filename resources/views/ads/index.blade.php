@@ -46,7 +46,11 @@
                                 {{ ucfirst($ad->status) }}
                             </span>
                             <span class="text-muted small">
-                                {{ $ad->start_date->format('M j') }} – {{ $ad->end_date->format('M j') }}
+                                @if ($ad->start_at && $ad->end_at)
+                                    {{ $ad->start_at->format('M j, Y') }} – {{ $ad->end_at->format('M j, Y') }}
+                                @else
+                                    {{ __('No schedule set') }}
+                                @endif
                             </span>
                         </div>
 
