@@ -13,7 +13,8 @@
     $isOwner = $post->user_id === auth()->id();
 @endphp
 
-<div class="pc-card" data-post-id="{{ $post->uuid }}">
+{{-- becomes: --}}
+<div class="pc-card" data-post-id="{{ $post->uuid }}" @if(!empty($adUuid)) data-ad-uuid="{{ $adUuid }}" @endif>
     <div class="pc-header">
         @if ($post->user->profile_photo)
             <img src="{{ $post->user->profile_photo }}" class="pc-avatar" alt="{{ $post->user->first_name }}">
@@ -47,12 +48,16 @@
             <div class="pc-meta">
                 {{ $post->created_at->diffForHumans() }}
                 &middot;
-                @switch($post->visibility)
-                    @case('public') 🌍 {{ __('Public') }} @break
-                    @case('friends') 👥 {{ __('Friends') }} @break
-                    @case('custom') 🚫 {{ __('Custom') }} @break
-                    @case('private') 🔒 {{ __('Only me') }} @break
-                @endswitch
+                @if (!empty($isSponsored))
+                    <span class="pc-sponsored-tag"><i class="bi bi-megaphone-fill"></i> {{ __('Sponsored') }}</span>
+                @else
+                    @switch($post->visibility)
+                        @case('public') 🌍 {{ __('Public') }} @break
+                        @case('friends') 👥 {{ __('Friends') }} @break
+                        @case('custom') 🚫 {{ __('Custom') }} @break
+                        @case('private') 🔒 {{ __('Only me') }} @break
+                    @endswitch
+                @endif
                 @if ($post->is_edited)
                     &middot; {{ __('Edited') }}
                 @endif
@@ -222,6 +227,11 @@
             --pc-avatar-fallback-bg: #e85d3f;
             --pc-avatar-fallback-text: #050505;
             --pc-hover: #3a3b3c;
+        }
+
+        .pc-sponsored-tag {
+            color: var(--pc-text-secondary);
+            font-weight: 600;
         }
 
         .pc-images {
@@ -952,6 +962,28 @@
                 });
                 bodyObserver.observe(document.body, { childList: true, subtree: true });
             }
+
+            // ---- Ad click tracking: any click on a sponsored card, excluding the
+            // action buttons/menus/comment area, counts as an ad click. ----
+            document.addEventListener('click', function (e) {
+                const card = e.target.closest('.pc-card[data-ad-uuid]');
+                if (!card) return;
+
+                // Don't count clicks on reactions, comments, share, or the options menu —
+                // those are already tracked as their own engagement type.
+                if (e.target.closest('.pc-actions, .pc-comments-section, .pc-share-section, .pc-options-wrap, .pc-follow-form')) {
+                    return;
+                }
+
+                fetch(`/ads/${card.dataset.adUuid}/click`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                    },
+                }).catch(() => {});
+            });
 
             (function () {
                 const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');

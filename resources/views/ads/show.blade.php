@@ -54,6 +54,24 @@
         </div>
     </div>
 
+    <div class="pc-card mb-3">
+        <p class="fw-bold mb-2">{{ __('Post engagement') }}</p>
+        <div class="row g-3 text-center">
+            <div class="col-4">
+                <div class="fs-5 fw-bold">{{ number_format($ad->post->views_count) }}</div>
+                <div class="text-muted small">{{ __('Views') }}</div>
+            </div>
+            <div class="col-4">
+                <div class="fs-5 fw-bold">{{ number_format($ad->post->likes_count) }}</div>
+                <div class="text-muted small">{{ __('Reactions') }}</div>
+            </div>
+            <div class="col-4">
+                <div class="fs-5 fw-bold">{{ number_format($ad->post->comments_count) }}</div>
+                <div class="text-muted small">{{ __('Comments') }}</div>
+            </div>
+        </div>
+    </div>
+
     <div class="pc-card">
         <p class="fw-bold mb-2">{{ __('Audience') }}</p>
         <p class="mb-1 text-muted small">
