@@ -105,7 +105,7 @@ class RegisterController extends Controller
 
                 'last_seen_at'      => now(),
 
-                'timezone'          => 'Africa/Lagos',
+                'timezone' => $geo['timezone'] ?? 'Africa/Lagos',
                 'language'          => 'en',
             ]);
 
