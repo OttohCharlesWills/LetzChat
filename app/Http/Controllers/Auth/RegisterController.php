@@ -67,6 +67,8 @@ class RegisterController extends Controller
         $agent = new Agent();
         $agent->setUserAgent($request->userAgent());
 
+        $geo = app(\App\Services\GeolocationService::class)->lookup($request->ip());
+
         DB::beginTransaction();
 
         try {
@@ -87,6 +89,13 @@ class RegisterController extends Controller
                 'bio'               => null,
                 'avatar'            => null,
                 'cover_photo'       => null,
+
+                // Auto-filled from IP at signup — the user never has to type
+                // this, and it's used for feed/ad region matching. They can
+                // still override it later if they edit their profile location.
+                'location'          => $geo['city'] && $geo['country']
+                    ? "{$geo['city']}, {$geo['country']}"
+                    : null,
 
                 'profile_completed' => false,
 
@@ -150,6 +159,10 @@ class RegisterController extends Controller
                 'ip_address' => $request->ip(),
                 'user_agent' => $request->userAgent(),
 
+                'country' => $geo['country'],
+                'state'   => $geo['state'],
+                'city'    => $geo['city'],
+
                 'metadata' => [
                     'source' => 'website'
                 ],
@@ -167,6 +180,7 @@ class RegisterController extends Controller
 
                 'metadata' => [
                     'source' => 'website',
+                    'geo' => $geo,
                 ],
             ]);
 
@@ -179,6 +193,13 @@ class RegisterController extends Controller
         } catch (\Throwable $e) {
 
             DB::rollBack();
+
+            \Illuminate\Support\Facades\Log::error('Registration failed', [
+                'error' => $e->getMessage(),
+                'file'  => $e->getFile(),
+                'line'  => $e->getLine(),
+                'email' => $request->email,
+            ]);
 
             return back()
                 ->withInput()
