@@ -24,7 +24,7 @@ class AdController extends Controller
     public function index(Request $request)
     {
         $ads = $request->user()->ads()
-            ->with('post:id,uuid,body')
+            ->with('post:id,uuid,body,views_count,likes_count')
             ->orderByDesc('created_at')
             ->paginate(15);
 
