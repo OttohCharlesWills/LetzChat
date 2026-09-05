@@ -42,6 +42,15 @@ protected $fillable = [
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    public function getDisplayStatusAttribute(): string
+    {
+        if (in_array($this->status, ['active', 'paused']) && $this->end_at && now()->gt($this->end_at)) {
+            return 'completed';
+        }
+
+        return $this->status;
+    }
+
     public function post()
     {
         return $this->belongsTo(Post::class);
