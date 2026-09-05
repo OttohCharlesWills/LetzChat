@@ -24,60 +24,78 @@ class PostController extends Controller
     }
 
     public function index(Request $request)
-    {
-        $viewer = $request->user();
+{
+    $viewer = $request->user();
 
-        $friendIds = Friendship::accepted()
-            ->involvingUser($viewer->id)
+    $friendIds = Friendship::accepted()
+        ->involvingUser($viewer->id)
+        ->get()
+        ->map(fn ($f) => $f->requester_id === $viewer->id ? $f->addressee_id : $f->requester_id)
+        ->unique()
+        ->values();
+
+    $friendOfFriendIds = collect();
+
+    if ($friendIds->isNotEmpty()) {
+        $friendOfFriendIds = Friendship::accepted()
+            ->where(function ($q) use ($friendIds) {
+                $q->whereIn('requester_id', $friendIds)
+                  ->orWhereIn('addressee_id', $friendIds);
+            })
             ->get()
-            ->map(fn ($f) => $f->requester_id === $viewer->id ? $f->addressee_id : $f->requester_id)
+            ->map(fn ($f) => $friendIds->contains($f->requester_id) ? $f->addressee_id : $f->requester_id)
             ->unique()
+            ->reject(fn ($id) => $id === $viewer->id || $friendIds->contains($id))
             ->values();
-
-        $friendOfFriendIds = collect();
-
-        if ($friendIds->isNotEmpty()) {
-            $friendOfFriendIds = Friendship::accepted()
-                ->where(function ($q) use ($friendIds) {
-                    $q->whereIn('requester_id', $friendIds)
-                      ->orWhereIn('addressee_id', $friendIds);
-                })
-                ->get()
-                ->map(fn ($f) => $friendIds->contains($f->requester_id) ? $f->addressee_id : $f->requester_id)
-                ->unique()
-                ->reject(fn ($id) => $id === $viewer->id || $friendIds->contains($id))
-                ->values();
-        }
-
-        $friendList = $friendIds->map(fn ($id) => (int) $id)->implode(',') ?: '0';
-        $fofList = $friendOfFriendIds->map(fn ($id) => (int) $id)->implode(',') ?: '0';
-
-        $posts = Post::with(['user', 'images', 'videos'])
-            ->visibleTo($viewer)
-            ->selectRaw("posts.*, CASE
-                WHEN posts.user_id = ? THEN 0
-                WHEN posts.user_id IN ({$friendList}) THEN 1
-                WHEN posts.user_id IN ({$fofList}) THEN 2
-                ELSE 3
-            END as feed_rank", [$viewer->id])
-            ->orderBy('feed_rank')
-            ->orderByDesc('is_pinned')
-            ->orderByDesc('created_at')
-            ->paginate(10);
-
-        $ads = collect();
-
-        if ($request->get('page', 1) == 1) {
-            $ads = app(\App\Services\AdService::class)->pickAdsFor($viewer, 2);
-
-            $ads->each(function ($ad) use ($viewer) {
-                app(\App\Services\AdService::class)->recordImpression($ad, $viewer);
-            });
-        }
-
-        return view('posts.index', compact('posts', 'ads'));
     }
 
+    $friendList = $friendIds->map(fn ($id) => (int) $id)->implode(',') ?: '0';
+    $fofList = $friendOfFriendIds->map(fn ($id) => (int) $id)->implode(',') ?: '0';
+    $viewerLocation = $viewer->location;
+
+    $posts = Post::with(['user', 'images', 'videos'])
+        ->visibleTo($viewer)
+        // Organic reach is capped at: yourself, friends, friends-of-friends,
+        // or strangers in your own region. Strangers outside your region
+        // never appear here organically — only via a targeted ad (see
+        // AdService::pickAdsFor(), which is a separate, unrestricted path).
+        ->where(function ($q) use ($viewer, $friendIds, $friendOfFriendIds, $viewerLocation) {
+            $q->where('posts.user_id', $viewer->id)
+              ->orWhereIn('posts.user_id', $friendIds)
+              ->orWhereIn('posts.user_id', $friendOfFriendIds);
+
+            if ($viewerLocation) {
+                $q->orWhere(function ($qq) use ($viewerLocation) {
+                    $qq->where('posts.visibility', 'public')
+                       ->whereHas('user', function ($u) use ($viewerLocation) {
+                           $u->whereRaw('LOWER(location) = ?', [mb_strtolower($viewerLocation)]);
+                       });
+                });
+            }
+        })
+        ->selectRaw("posts.*, CASE
+            WHEN posts.user_id = ? THEN 0
+            WHEN posts.user_id IN ({$friendList}) THEN 1
+            WHEN posts.user_id IN ({$fofList}) THEN 2
+            ELSE 3
+        END as feed_rank", [$viewer->id])
+        ->orderBy('feed_rank')
+        ->orderByDesc('is_pinned')
+        ->orderByDesc('created_at')
+        ->paginate(10);
+
+    $ads = collect();
+
+    if ($request->get('page', 1) == 1) {
+        $ads = app(\App\Services\AdService::class)->pickAdsFor($viewer, 2);
+
+        $ads->each(function ($ad) use ($viewer) {
+            app(\App\Services\AdService::class)->recordImpression($ad, $viewer);
+        });
+    }
+
+    return view('posts.index', compact('posts', 'ads'));
+}
     /**
      * Run a text through moderation. Returns null if clean/flagged (caller
      * should proceed, using the second array value for flag data); returns
